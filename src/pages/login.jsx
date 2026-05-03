@@ -13,17 +13,6 @@ function Login() {
   };
 
 
-const handleSubmit = (e) => {
-  e.preventDefault();
-  
-  if (formData.email === VALID_EMAIL && formData.password === VALID_PASSWORD) {
-    console.log('Login successful');
-    navigate('/home');
-  } else {
-    alert('Invalid email or password');
-  }
-};
-
 
   useEffect(() => {
     const handleMouseMove = (event) => {
