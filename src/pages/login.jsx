@@ -12,6 +12,22 @@ function Login() {
     navigate("/home");  // go to home after login
   };
 
+
+const handleSubmit = (e) => {
+  e.preventDefault();
+
+  const VALID_EMAIL = "ahmed@guc.com";
+  const VALID_PASSWORD = "123456";
+
+  if (formData.email === VALID_EMAIL && formData.password === VALID_PASSWORD) {
+    console.log('Login successful');
+    navigate('/home');
+  } else {
+    alert('Invalid email or password');
+  }
+};
+
+
   useEffect(() => {
     const handleMouseMove = (event) => {
       if (!faceRef.current || eyesClosed) {
