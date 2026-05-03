@@ -11,7 +11,7 @@ function Landing() {
       </div>
 
       <header className="relative z-10">
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6">
+        <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 via-teal-400 to-sky-500 p-[1px] shadow-lg">
               <div className="flex h-full w-full items-center justify-center rounded-[11px] bg-white">
@@ -60,7 +60,7 @@ function Landing() {
       </header>
 
       <main className="relative z-10">
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-8 sm:px-6 sm:pb-20 sm:pt-10 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="mx-auto grid max-w-7xl items-center gap-12 px-4 pb-16 pt-10 sm:px-6 sm:pb-20 lg:px-8 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
             <span className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-emerald-700 shadow-sm">
               Portfolio studio
@@ -149,7 +149,7 @@ function Landing() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 pb-12 sm:px-6">
+        <section className="mx-auto max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
           <div className="grid gap-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur transition hover:shadow-xl md:grid-cols-4">
             <div>
               <p className="text-sm text-slate-500">Projects published</p>
@@ -170,7 +170,7 @@ function Landing() {
           </div>
         </section>
 
-        <section id="features" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6">
+        <section id="features" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Features</p>
             <h2 className="text-3xl font-semibold text-slate-900 md:text-4xl">Everything you need to launch with polish.</h2>
@@ -224,7 +224,7 @@ function Landing() {
           </div>
         </section>
 
-        <section id="flow" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6">
+        <section id="flow" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">How it works</p>
@@ -253,7 +253,7 @@ function Landing() {
           </div>
         </section>
 
-        <section id="audience" className="mx-auto max-w-6xl scroll-mt-24 px-4 py-16 sm:px-6">
+        <section id="audience" className="mx-auto max-w-7xl scroll-mt-24 px-4 py-16 sm:px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200 bg-white/80 p-10 shadow-lg">
             <div className="flex flex-col gap-4 text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.3em] text-emerald-600">Who it's for</p>
@@ -276,7 +276,7 @@ function Landing() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
+        <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
           <div className="rounded-3xl bg-slate-900 px-8 py-12 text-white shadow-xl shadow-slate-900/20 transition hover:shadow-2xl md:px-12">
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
               <div>
@@ -295,7 +295,7 @@ function Landing() {
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-white/60 bg-white/70 px-4 py-6 text-center text-sm text-slate-500 sm:px-6">
+      <footer className="relative z-10 border-t border-white/60 bg-white/70 px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
         (c) 2026 ProjectFolio — GUC Software Engineering Project
       </footer>
     </div>
