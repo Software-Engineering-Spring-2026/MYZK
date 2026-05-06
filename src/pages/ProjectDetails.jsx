@@ -44,10 +44,11 @@ const MOCK_PROJECT = {
 function ProjectDetails() {
   const { id } = useParams();
 
-  const role = localStorage.getItem("role") || "student";
-  const currentUser = (() => {
-    try { return JSON.parse(localStorage.getItem("currentUser")); } catch { return null; }
-  })() || { id: "u1", email: "ahmed@guc.com", firstName: "Ahmed", lastName: "Hassan" };
+  const user = (() => {
+    try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
+  })();
+  const role = user?.role || "student";
+  const currentUser = user || { id: "u1", email: "ahmed@guc.com", firstName: "Ahmed", lastName: "Hassan" };
 
   const [project, setProject] = useState(() => {
     try {
