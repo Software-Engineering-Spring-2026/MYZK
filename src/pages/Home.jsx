@@ -74,6 +74,13 @@ const [hoveredRating, setHoveredRating] =
 
   // ---------------- AUTH ----------------
   const user = JSON.parse(localStorage.getItem('user'));
+  const [favorites, setFavorites] = useState(
+  JSON.parse(
+    localStorage.getItem(
+      `favorites_${user?.email}`
+    )
+  ) || []
+);
 
   useEffect(() => {
     if (!user) {
@@ -417,6 +424,42 @@ const mockStudents = [
       [key]: !prev[key],
     }));
   };
+
+// ---------------- FAVORITES ----------------
+// ---------------- PORTFOLIO FAVORITES ----------------
+const togglePortfolioFavorite = (
+  student
+) => {
+  const alreadyExists = favorites.some(
+    (fav) =>
+      fav.email === student.email
+  );
+
+  let updatedFavorites;
+
+  if (alreadyExists) {
+    updatedFavorites = favorites.filter(
+      (fav) =>
+        fav.email !== student.email
+    );
+  } else {
+    updatedFavorites = [
+      ...favorites,
+      {
+        type: 'portfolio',
+        ...student,
+      },
+    ];
+  }
+
+  setFavorites(updatedFavorites);
+
+  localStorage.setItem(
+    `favorites_${user.email}`,
+    JSON.stringify(updatedFavorites)
+  );
+};
+
 
   // ---------------- DASHBOARDS ----------------
 
@@ -830,7 +873,16 @@ const StudentDashboard = () => (
             </p>
           </div>
 
-          <div className="flex gap-3 relative">
+         <div className="flex gap-3 relative items-center">
+
+ 
+  {/* PROFILE BUTTON */}
+<button
+  onClick={() => navigate('/profile')}
+  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#111827] w-12 h-12 rounded-xl font-semibold transition-all shadow-sm flex items-center justify-center text-xl"
+>
+  👤
+</button>
             {/* NOTIFICATIONS */}
             <button
               onClick={() =>
@@ -1036,9 +1088,12 @@ const StudentDashboard = () => (
       {filteredProjects.length > 0 ? (
         filteredProjects.map((project) => (
           <div
-            key={project.id}
-            className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
-          >
+  key={project.id}
+  onClick={() =>
+    navigate(`/project/${project.id}`)
+  }
+  className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100 cursor-pointer hover:border-[#10b981] hover:shadow-sm transition"
+>
             <p className="font-semibold text-[#111827]">
               {project.title}
             </p>
@@ -1055,6 +1110,37 @@ const StudentDashboard = () => (
             <p className="text-[#059669] text-xs mt-1">
               Created: {project.createdAt}
             </p>
+
+<div className="mt-3 flex gap-2">
+  <button
+    onClick={() =>
+      navigate(`/project/${project.id}`)
+    }
+    className="bg-[#059669] hover:bg-[#047857] text-white text-xs px-3 py-2 rounded-lg font-semibold"
+  >
+    View Project
+  </button>
+
+  <button
+    onClick={() =>
+      toggleFavorite(project)
+    }
+    className={`text-xs px-3 py-2 rounded-lg font-semibold transition ${
+      favorites.some(
+        (fav) => fav.id === project.id
+      )
+        ? 'bg-red-100 text-red-600'
+        : 'bg-yellow-100 text-yellow-700'
+    }`}
+  >
+    {favorites.some(
+      (fav) => fav.id === project.id
+    )
+      ? '★ Favorited'
+      : '☆ Add to Favorites'}
+  </button>
+</div>
+
           </div>
         ))
       ) : (
@@ -1090,9 +1176,26 @@ const StudentDashboard = () => (
           key={index}
           className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
         >
-          <p className="font-semibold text-[#111827]">
-            {student.firstName} {student.lastName}
-          </p>
+         <div className="flex justify-between items-center">
+  <p className="font-semibold text-[#111827]">
+    {student.firstName}{' '}
+    {student.lastName}
+  </p>
+
+  <button
+    onClick={() =>
+      togglePortfolioFavorite(student)
+    }
+    className="text-xl"
+  >
+    {favorites.some(
+      (fav) =>
+        fav.email === student.email
+    )
+      ? '⭐'
+      : '☆'}
+  </button>
+</div>
 
           <p className="text-gray-500">
             {student.email}
