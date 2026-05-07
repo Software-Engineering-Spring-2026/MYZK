@@ -260,6 +260,7 @@ const filteredInternships = [...mockInternships]
     course: 'Bachelor Project',
     createdAt: '2026-04-10',
     rating: 5,
+    creatorId: 'demo',
   },
   {
     id: 'p2',
@@ -269,6 +270,7 @@ const filteredInternships = [...mockInternships]
     course: 'Software Engineering',
     createdAt: '2026-03-22',
     rating: 4,
+    creatorId: 'demo',
   },
   {
     id: 'p3',
@@ -278,6 +280,7 @@ const filteredInternships = [...mockInternships]
     course: 'Operating Systems',
     createdAt: '2026-05-01',
     rating: 3,
+    creatorId: 'demo',
   },
   {
     id: 'p4',
@@ -287,6 +290,7 @@ const filteredInternships = [...mockInternships]
     course: 'Machine Learning',
     createdAt: '2026-02-18',
     rating: 5,
+    creatorId: 'demo',
   },
   {
     id: 'p5',
@@ -296,9 +300,12 @@ const filteredInternships = [...mockInternships]
     course: 'Embedded Systems',
     createdAt: '2026-01-30',
     rating: 2,
+    creatorId: 'demo',
   },
 ];
 
+const storedProjects =
+  JSON.parse(localStorage.getItem('projects')) || [];
   // ---------------- MOCK STUDENTS ----------------
   // ---------------- MOCK STUDENTS ----------------
 const mockStudents = [
@@ -363,7 +370,12 @@ const mockStudents = [
       .includes(instructorSearch.toLowerCase())
 );
 
- const filteredProjects = mockProjects.filter(
+const allProjects = [
+  ...mockProjects,
+  ...storedProjects,
+];
+
+const filteredProjects = allProjects.filter(
   (project) => {
     const matchesSearch =
       `${project.title} ${project.description} ${project.course}`
@@ -372,11 +384,11 @@ const mockStudents = [
 
     const matchesDate =
       projectDateSearch === '' ||
-      project.createdAt.includes(projectDateSearch);
+      project.createdAt?.includes(projectDateSearch);
 
     const matchesRating =
       projectRatingFilter === 0 ||
-      project.rating >= projectRatingFilter;
+      (project.rating || 0) >= projectRatingFilter;
 
     return (
       matchesSearch &&
@@ -416,7 +428,7 @@ const mockStudents = [
 
     const newMessage = {
       id: Date.now(),
-      sender: user.firstName,
+      sender:  user.firstName || user.companyName,
       message: chatInput,
     };
 
@@ -1049,9 +1061,12 @@ const StudentDashboard = () => (
       {filteredProjects.length > 0 ? (
         filteredProjects.map((project) => (
           <div
-            key={project.id}
-            className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
-          >
+  key={project.id}
+  onClick={() =>
+    navigate(`/project/${project.id}`)
+  }
+  className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100 cursor-pointer hover:border-[#10b981] hover:shadow-sm transition"
+>
             <p className="font-semibold text-[#111827]">
               {project.title}
             </p>
