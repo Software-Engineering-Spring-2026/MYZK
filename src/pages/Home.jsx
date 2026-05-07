@@ -39,38 +39,51 @@ const [hoveredRating, setHoveredRating] =
     pushNotifications: false,
   });
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      text: 'Instructor Ali commented on your B+ Tree project',
-      read: false,
-    },
-    {
-      id: 2,
-      text: 'New internship posted: Backend Intern at Telda',
-      read: false,
-    },
-    {
-      id: 3,
-      text: 'Your portfolio was viewed by 5 employers today',
-      read: true,
-    },
-    {
-      id: 4,
-      text: 'You got a new private message',
-      read: false,
-    },
-    {
-      id: 5,
-      text: 'Your teammate uploaded a new thesis draft',
-      read: false,
-    },
-    {
-      id: 6,
-      text: 'Employer viewed your student portfolio',
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState(() => {
+  const savedNotifications =
+    localStorage.getItem('notifications');
+
+  return savedNotifications
+    ? JSON.parse(savedNotifications)
+    : [
+        {
+          id: 1,
+          text: 'Instructor Ali commented on your B+ Tree project',
+          read: false,
+        },
+        {
+          id: 2,
+          text: 'New internship posted: Backend Intern at Telda',
+          read: false,
+        },
+        {
+          id: 3,
+          text: 'Your portfolio was viewed by 5 employers today',
+          read: true,
+        },
+        {
+          id: 4,
+          text: 'You got a new private message',
+          read: false,
+        },
+        {
+          id: 5,
+          text: 'Your teammate uploaded a new thesis draft',
+          read: false,
+        },
+        {
+          id: 6,
+          text: 'Employer viewed your student portfolio',
+          read: true,
+        },
+      ];
+});
+useEffect(() => {
+  localStorage.setItem(
+    'notifications',
+    JSON.stringify(notifications)
+  );
+}, [notifications]);
 
   // ---------------- AUTH ----------------
   const user = JSON.parse(localStorage.getItem('user'));
