@@ -8,7 +8,10 @@ const Home = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showChat, setShowChat] = useState(false);
-
+const [projectRatingFilter, setProjectRatingFilter] =
+  useState(0);
+const [hoveredRating, setHoveredRating] =
+  useState(0);
   const [chatInput, setChatInput] = useState('');
 
   const [chatMessages, setChatMessages] = useState([
@@ -236,87 +239,99 @@ const filteredInternships = [...mockInternships]
 
   // ---------------- MOCK PROJECTS ----------------
   const mockProjects = [
-    {
-      id: 'p1',
-      title: 'Smart Campus Navigation System',
-      description:
-        'AR-based navigation system for GUC students.',
-      course: 'Bachelor Project',
-      createdAt: '2026-04-10',
-    },
-    {
-      id: 'p2',
-      title: 'AI Resume Analyzer',
-      description:
-        'Machine learning system for evaluating CVs.',
-      course: 'Software Engineering',
-      createdAt: '2026-03-22',
-    },
-    {
-      id: 'p3',
-      title: 'Hospital Queue Management',
-      description:
-        'Distributed system for patient scheduling.',
-      course: 'Operating Systems',
-      createdAt: '2026-05-01',
-    },
-    {
-      id: 'p4',
-      title: 'E-Commerce Recommendation Engine',
-      description:
-        'Recommendation system using collaborative filtering.',
-      course: 'Machine Learning',
-      createdAt: '2026-02-18',
-    },
-    {
-      id: 'p5',
-      title: 'Autonomous Delivery Robot',
-      description:
-        'Embedded systems project for indoor delivery robots.',
-      course: 'Embedded Systems',
-      createdAt: '2026-01-30',
-    },
-  ];
+  {
+    id: 'p1',
+    title: 'Smart Campus Navigation System',
+    description:
+      'AR-based navigation system for GUC students.',
+    course: 'Bachelor Project',
+    createdAt: '2026-04-10',
+    rating: 5,
+  },
+  {
+    id: 'p2',
+    title: 'AI Resume Analyzer',
+    description:
+      'Machine learning system for evaluating CVs.',
+    course: 'Software Engineering',
+    createdAt: '2026-03-22',
+    rating: 4,
+  },
+  {
+    id: 'p3',
+    title: 'Hospital Queue Management',
+    description:
+      'Distributed system for patient scheduling.',
+    course: 'Operating Systems',
+    createdAt: '2026-05-01',
+    rating: 3,
+  },
+  {
+    id: 'p4',
+    title: 'E-Commerce Recommendation Engine',
+    description:
+      'Recommendation system using collaborative filtering.',
+    course: 'Machine Learning',
+    createdAt: '2026-02-18',
+    rating: 5,
+  },
+  {
+    id: 'p5',
+    title: 'Autonomous Delivery Robot',
+    description:
+      'Embedded systems project for indoor delivery robots.',
+    course: 'Embedded Systems',
+    createdAt: '2026-01-30',
+    rating: 2,
+  },
+];
 
   // ---------------- MOCK STUDENTS ----------------
-  const mockStudents = [
-    {
-      firstName: 'Ahmed',
-      lastName: 'Karam',
-      email: 'ahmed@student.guc.edu.eg',
-      role: 'student',
-    },
-    {
-      firstName: 'Sara',
-      lastName: 'Mohamed',
-      email: 'sara@student.guc.edu.eg',
-      role: 'student',
-    },
-    {
-      firstName: 'Omar',
-      lastName: 'Khaled',
-      email: 'omar@student.guc.edu.eg',
-      role: 'student',
-    },
-    {
-      firstName: 'Mariam',
-      lastName: 'Tarek',
-      email: 'mariam@student.guc.edu.eg',
-      role: 'student',
-    },
-    {
-      firstName: 'Yassin',
-      lastName: 'Hesham',
-      email: 'yassin@student.guc.edu.eg',
-      role: 'student',
-    },
-    {
-      firstName: 'Lina',
-      lastName: 'Adel',
-      email: 'lina@student.guc.edu.eg',
-      role: 'student',
-    },
-  ];
+  // ---------------- MOCK STUDENTS ----------------
+const mockStudents = [
+  {
+    firstName: 'Ahmed',
+    lastName: 'Karam',
+    email: 'ahmed@student.guc.edu.eg',
+    role: 'student',
+    skills: ['React', 'Node.js', 'MongoDB'],
+  },
+  {
+    firstName: 'Sara',
+    lastName: 'Mohamed',
+    email: 'sara@student.guc.edu.eg',
+    role: 'student',
+    skills: ['UI/UX', 'Figma', 'Frontend'],
+  },
+  {
+    firstName: 'Omar',
+    lastName: 'Khaled',
+    email: 'omar@student.guc.edu.eg',
+    role: 'student',
+    skills: ['Java', 'Spring Boot', 'SQL'],
+  },
+  {
+    firstName: 'Mariam',
+    lastName: 'Tarek',
+    email: 'mariam@student.guc.edu.eg',
+    role: 'student',
+    skills: ['Python', 'Machine Learning', 'TensorFlow'],
+  },
+  {
+    firstName: 'Yassin',
+    lastName: 'Hesham',
+    email: 'yassin@student.guc.edu.eg',
+    role: 'student',
+    skills: ['Cyber Security', 'Networking', 'Linux'],
+  },
+  {
+    firstName: 'Lina',
+    lastName: 'Adel',
+    email: 'lina@student.guc.edu.eg',
+    role: 'student',
+    skills: ['Flutter', 'Firebase', 'Mobile Development'],
+  },
+];
 
   // ---------------- COMBINED STUDENTS ----------------
   const allStudents = [
@@ -335,27 +350,40 @@ const filteredInternships = [...mockInternships]
       .includes(instructorSearch.toLowerCase())
 );
 
-  const filteredProjects = mockProjects.filter(
-    (project) => {
-      const matchesSearch =
-        `${project.title} ${project.description} ${project.course}`
-          .toLowerCase()
-          .includes(projectSearch.toLowerCase());
+ const filteredProjects = mockProjects.filter(
+  (project) => {
+    const matchesSearch =
+      `${project.title} ${project.description} ${project.course}`
+        .toLowerCase()
+        .includes(projectSearch.toLowerCase());
 
-      const matchesDate =
-        projectDateSearch === '' ||
-        project.createdAt.includes(projectDateSearch);
+    const matchesDate =
+      projectDateSearch === '' ||
+      project.createdAt.includes(projectDateSearch);
 
-      return matchesSearch && matchesDate;
-    }
-  );
+    const matchesRating =
+      projectRatingFilter === 0 ||
+      project.rating >= projectRatingFilter;
+
+    return (
+      matchesSearch &&
+      matchesDate &&
+      matchesRating
+    );
+  }
+);
 
   const filteredStudents = allStudents.filter(
-    (student) =>
-      `${student.firstName} ${student.lastName} ${student.email}`
-        .toLowerCase()
-        .includes(studentSearch.toLowerCase())
-  );
+  (student) =>
+    `
+      ${student.firstName}
+      ${student.lastName}
+      ${student.email}
+      ${(student.skills || []).join(' ')}
+    `
+      .toLowerCase()
+      .includes(studentSearch.toLowerCase())
+);
 
   // ---------------- HELPERS ----------------
   const toggleRead = (id) => {
@@ -538,7 +566,35 @@ const StudentDashboard = () => (
 
 
 
-  const InstructorDashboard = () => (
+  const InstructorDashboard = () => {
+  const recommendedProjects = [
+    {
+      id: 1,
+      title: 'AI Resume Analyzer',
+      field: 'Machine Learning',
+      students: 3,
+    },
+    {
+      id: 2,
+      title: 'Smart Hospital System',
+      field: 'Software Engineering',
+      students: 5,
+    },
+    {
+      id: 3,
+      title: 'Campus Navigation App',
+      field: 'Mobile Development',
+      students: 2,
+    },
+    {
+      id: 4,
+      title: 'Cyber Security Threat Detector',
+      field: 'Cyber Security',
+      students: 4,
+    },
+  ];
+
+  return (
     <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
       <h2 className="text-2xl font-bold text-[#064e3b] mb-6">
         Instructor Review Panel
@@ -547,33 +603,140 @@ const StudentDashboard = () => (
       <button className="p-6 bg-[#f0fdf4] border border-[#d1fae5] rounded-2xl text-[#065f46] font-bold hover:bg-[#d1fae5] transition">
         Review Student Portfolios
       </button>
+
+      {/* RECOMMENDED PROJECTS */}
+      <div className="mt-10">
+        <h3 className="text-lg font-bold text-[#111827] mb-4">
+          Recommended Projects
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {recommendedProjects.map((project) => (
+            <div
+              key={project.id}
+              className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all"
+            >
+              <p className="text-[#111827] font-bold text-lg">
+                {project.title}
+              </p>
+
+              <p className="text-[#059669] text-sm font-medium mt-1">
+                {project.field}
+              </p>
+
+              <p className="text-gray-400 text-sm mt-3">
+                Interested Students: {project.students}
+              </p>
+
+              <button className="mt-4 bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+                View Project
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
+};
+ const EmployerDashboard = () => {
+  const recommendedProjects = [
+    {
+      id: 1,
+      title: 'AI Resume Analyzer',
+      field: 'Machine Learning',
+      companyFit: 'Great for AI recruitment systems',
+      rating: 5,
+    },
+    {
+      id: 2,
+      title: 'Smart Hospital System',
+      field: 'Software Engineering',
+      companyFit: 'Useful for healthcare platforms',
+      rating: 4,
+    },
+    {
+      id: 3,
+      title: 'Campus Navigation App',
+      field: 'Mobile Development',
+      companyFit: 'Strong mobile UI/UX implementation',
+      rating: 4,
+    },
+    {
+      id: 4,
+      title: 'Cyber Security Threat Detector',
+      field: 'Cyber Security',
+      companyFit: 'Relevant for enterprise security',
+      rating: 5,
+    },
+  ];
 
-  const EmployerDashboard = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-[#064e3b]">
-        Employer Hub
-      </h2>
-
+  return (
+    <div className="space-y-8">
+      {/* EMPLOYER HEADER */}
       <div className="bg-gradient-to-r from-[#059669] to-[#10b981] rounded-3xl p-8 flex justify-between items-center text-white">
         <div>
-          <h3 className="font-bold text-xl mb-1 text-white">
-            Post an Internship
+          <h3 className="font-bold text-2xl mb-2 text-white">
+            Employer Hub
           </h3>
 
           <p className="opacity-90 italic text-white">
-            Find the best talent from GUC students.
+            Find the best student projects and talent.
           </p>
         </div>
 
         <button className="bg-white text-[#059669] font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-gray-50">
-          Get Started
+          Post Internship
         </button>
+      </div>
+
+      {/* RECOMMENDED PROJECTS */}
+      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
+        <h2 className="text-2xl font-bold text-[#064e3b] mb-6">
+          Recommended Student Projects
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {recommendedProjects.map((project) => (
+            <div
+              key={project.id}
+              className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-[#111827] font-bold text-lg">
+                    {project.title}
+                  </p>
+
+                  <p className="text-[#059669] text-sm font-medium mt-1">
+                    {project.field}
+                  </p>
+                </div>
+
+                <p className="text-yellow-500 text-sm">
+                  {'⭐'.repeat(project.rating)}
+                </p>
+              </div>
+
+              <p className="text-gray-500 text-sm mt-4">
+                {project.companyFit}
+              </p>
+
+              <div className="mt-5 flex gap-3">
+                <button className="bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+                  View Project
+                </button>
+
+                <button className="border border-[#059669] text-[#059669] hover:bg-[#ecfdf5] text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+                  Contact Student
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
-
+};
   return (
     <div className="min-h-screen bg-[#fcfaf7] font-sans text-gray-900 relative">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -800,55 +963,106 @@ const StudentDashboard = () => (
 
 {/* PROJECT SEARCH */}
 
-          {/* PROJECT SEARCH */}
-          <div className="bg-white/60 backdrop-blur-sm border border-white p-5 rounded-2xl shadow-sm">
-            <label className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 block">
-              Project Library
-            </label>
+        {/* PROJECT SEARCH */}
+<div className="bg-white/60 backdrop-blur-sm border border-white p-5 rounded-2xl shadow-sm">
+  <label className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 block">
+    Project Library
+  </label>
 
-            <div className="space-y-3">
-              <input
-                type="text"
-                value={projectSearch}
-                onChange={(e) =>
-                  setProjectSearch(e.target.value)
-                }
-                placeholder="Search projects..."
-                className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
-              />
+  <div className="space-y-3">
+    {/* SEARCH INPUT */}
+    <input
+      type="text"
+      value={projectSearch}
+      onChange={(e) =>
+        setProjectSearch(e.target.value)
+      }
+      placeholder="Search projects..."
+      className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
+    />
 
-              <input
-                type="date"
-                value={projectDateSearch}
-                onChange={(e) =>
-                  setProjectDateSearch(e.target.value)
-                }
-                className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none text-gray-500"
-              />
-            </div>
+    {/* DATE FILTER */}
+    <input
+      type="date"
+      value={projectDateSearch}
+      onChange={(e) =>
+        setProjectDateSearch(e.target.value)
+      }
+      className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none text-gray-500"
+    />
 
-            {(projectSearch.trim() !== '' ||
-              projectDateSearch !== '') && (
-              <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-                {filteredProjects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="bg-[#f9fafb] rounded-xl p-3 text-sm"
-                  >
-                    <p className="font-semibold text-[#111827]">
-                      {project.title}
-                    </p>
+    {/* RATING FILTER */}
+    <div className="flex items-center gap-1 mt-2">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <button
+          key={star}
+          type="button"
+          onMouseEnter={() =>
+            setHoveredRating(star)
+          }
+          onMouseLeave={() =>
+            setHoveredRating(0)
+          }
+          onClick={() =>
+            setProjectRatingFilter(star)
+          }
+          className="text-2xl transition-all"
+        >
+          {star <=
+          (hoveredRating ||
+            projectRatingFilter)
+            ? '⭐'
+            : '☆'}
+        </button>
+      ))}
 
-                    <p className="text-gray-500 text-xs">
-                      {project.course}
-                    </p>
+      {projectRatingFilter > 0 && (
+        <button
+          onClick={() =>
+            setProjectRatingFilter(0)
+          }
+          className="ml-3 text-xs text-red-500 hover:underline"
+        >
+          Clear
+        </button>
+      )}
+    </div>
+  </div>
 
-                    <p className="text-[#059669] text-xs mt-1">
-                      Created: {project.createdAt}
-                    </p>
-                  </div>
-                ))}
-              </div>
+  {(projectSearch.trim() !== '' ||
+    projectDateSearch !== '' ||
+    projectRatingFilter > 0) && (
+    <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+      {filteredProjects.length > 0 ? (
+        filteredProjects.map((project) => (
+          <div
+            key={project.id}
+            className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
+          >
+            <p className="font-semibold text-[#111827]">
+              {project.title}
+            </p>
+
+            <p className="text-gray-500 text-xs">
+              {project.course}
+            </p>
+
+            {/* PROJECT RATING */}
+            <p className="text-yellow-500 text-sm mt-1">
+              {'⭐'.repeat(project.rating)}
+            </p>
+
+            <p className="text-[#059669] text-xs mt-1">
+              Created: {project.createdAt}
+            </p>
+          </div>
+        ))
+      ) : (
+        <p className="text-sm text-gray-400 px-2">
+          No projects found
+        </p>
+      )}
+    </div>
             )}
           </div>
 
@@ -868,24 +1082,44 @@ const StudentDashboard = () => (
               className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
             />
 
-            {studentSearch.trim() !== '' && (
-              <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-                {filteredStudents.map((student, index) => (
-                  <div
-                    key={index}
-                    className="bg-[#f9fafb] rounded-xl p-3 text-sm"
-                  >
-                    <p className="font-semibold text-[#111827]">
-                      {student.firstName} {student.lastName}
-                    </p>
+           {studentSearch.trim() !== '' && (
+  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+    {filteredStudents.length > 0 ? (
+      filteredStudents.map((student, index) => (
+        <div
+          key={index}
+          className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
+        >
+          <p className="font-semibold text-[#111827]">
+            {student.firstName} {student.lastName}
+          </p>
 
-                    <p className="text-gray-500">
-                      {student.email}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+          <p className="text-gray-500">
+            {student.email}
+          </p>
+
+          {/* SKILLS */}
+          {student.skills && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {student.skills.map((skill, idx) => (
+                <span
+                  key={idx}
+                  className="bg-[#d1fae5] text-[#065f46] text-xs px-2 py-1 rounded-full font-medium"
+                >
+                  {skill}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ))
+    ) : (
+      <p className="text-sm text-gray-400 px-2">
+        No students found
+      </p>
+    )}
+  </div>
+)}
           </div>
         </div>
 
