@@ -16,6 +16,10 @@ const Profile = () => {
 
   if (!user) return null;
 
+  // ---------------- MY PROJECTS ----------------
+  const storedProjects = JSON.parse(localStorage.getItem('projects')) || [];
+  const myProjects = storedProjects.filter(p => p.creatorId === user.id);
+
   // ---------------- PROFILE IMAGE ----------------
   const [profileImage, setProfileImage] = useState(
     localStorage.getItem(`profileImage_${user.email}`) || ''
@@ -283,8 +287,14 @@ const saveEducation = () => {
 };
 
 return (
-    <div className="min-h-screen bg-[#fcfaf7] px-6 py-10">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#f7f4ee] text-slate-900 antialiased">
+      {/* Background blobs */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-200/70 blur-3xl" />
+        <div className="absolute right-[-6%] top-20 h-[360px] w-[360px] rounded-full bg-emerald-200/60 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_55%),radial-gradient(circle_at_20%_70%,rgba(251,191,36,0.18),transparent_55%)]" />
+      </div>
+      <div className="relative z-10 mx-auto max-w-5xl px-6 py-10">
         {/* TOP BAR */}
         <div className="flex justify-between items-center mb-10">
           <div>
@@ -462,6 +472,52 @@ return (
         {/* STUDENT PROFILE */}
         {user.role === 'student' && (
           <div className="space-y-8">
+            {/* MY PROJECTS */}
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
+              <div className="mb-6 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Your Work</span>
+                  <h3 className="mt-0.5 text-2xl font-bold text-slate-900">My Projects</h3>
+                </div>
+                <button
+                  onClick={() => navigate('/create')}
+                  className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:-translate-y-0.5 hover:bg-emerald-500"
+                >
+                  + New Project
+                </button>
+              </div>
+              {myProjects.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-2">
+                  {myProjects.map((p) => (
+                    <div key={p.id} className="w-56 shrink-0 rounded-2xl border border-slate-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                      <p className="truncate font-semibold text-slate-900 text-sm">{p.title}</p>
+                      <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{p.course}</span>
+                      <div className="mt-2 flex items-center gap-0.5">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} viewBox="0 0 24 24" className={`h-3 w-3 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <button onClick={() => navigate(`/project/${p.id}`)} className="mt-3 w-full rounded-full bg-emerald-600 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500">
+                        View
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                  <p className="text-sm text-slate-400">No projects yet.</p>
+                  <button
+                    onClick={() => navigate('/create')}
+                    className="mt-3 rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                  >
+                    + Create your first project
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* FAVORITES */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
               <h3 className="text-2xl font-bold text-[#111827] mb-5">
