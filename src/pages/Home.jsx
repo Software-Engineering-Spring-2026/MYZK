@@ -8,28 +8,14 @@ const Home = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showChat, setShowChat] = useState(false);
-const [projectRatingFilter, setProjectRatingFilter] =
-  useState(0);
-const [hoveredRating, setHoveredRating] =
-  useState(0);
+  const [projectRatingFilter, setProjectRatingFilter] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
   const [chatInput, setChatInput] = useState('');
 
   const [chatMessages, setChatMessages] = useState([
-    {
-      id: 1,
-      sender: 'System',
-      message: 'Welcome to ProjectFolio Chat!',
-    },
-    {
-      id: 2,
-      sender: 'Ali Mahmoud',
-      message: 'Don’t forget tomorrow’s project review.',
-    },
-    {
-      id: 3,
-      sender: 'Sara Ahmed',
-      message: 'Can you review the database schema?',
-    },
+    { id: 1, sender: 'System', message: 'Welcome to ProjectFolio Chat!' },
+    { id: 2, sender: 'Ali Mahmoud', message: "Don't forget tomorrow's project review." },
+    { id: 3, sender: 'Sara Ahmed', message: 'Can you review the database schema?' },
   ]);
 
   const [settings, setSettings] = useState({
@@ -40,933 +26,441 @@ const [hoveredRating, setHoveredRating] =
   });
 
   const [notifications, setNotifications] = useState(() => {
-  const savedNotifications =
-    localStorage.getItem('notifications');
+    const saved = localStorage.getItem('notifications');
+    return saved ? JSON.parse(saved) : [
+      { id: 1, text: 'Instructor Ali commented on your B+ Tree project', read: false },
+      { id: 2, text: 'New internship posted: Backend Intern at Telda', read: false },
+      { id: 3, text: 'Your portfolio was viewed by 5 employers today', read: true },
+      { id: 4, text: 'You got a new private message', read: false },
+      { id: 5, text: 'Your teammate uploaded a new thesis draft', read: false },
+      { id: 6, text: 'Employer viewed your student portfolio', read: true },
+    ];
+  });
 
-  return savedNotifications
-    ? JSON.parse(savedNotifications)
-    : [
-        {
-          id: 1,
-          text: 'Instructor Ali commented on your B+ Tree project',
-          read: false,
-        },
-        {
-          id: 2,
-          text: 'New internship posted: Backend Intern at Telda',
-          read: false,
-        },
-        {
-          id: 3,
-          text: 'Your portfolio was viewed by 5 employers today',
-          read: true,
-        },
-        {
-          id: 4,
-          text: 'You got a new private message',
-          read: false,
-        },
-        {
-          id: 5,
-          text: 'Your teammate uploaded a new thesis draft',
-          read: false,
-        },
-        {
-          id: 6,
-          text: 'Employer viewed your student portfolio',
-          read: true,
-        },
-      ];
-});
-useEffect(() => {
-  localStorage.setItem(
-    'notifications',
-    JSON.stringify(notifications)
-  );
-}, [notifications]);
+  useEffect(() => {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }, [notifications]);
 
   // ---------------- AUTH ----------------
   const user = JSON.parse(localStorage.getItem('user'));
   const [favorites, setFavorites] = useState(
-  JSON.parse(
-    localStorage.getItem(
-      `favorites_${user?.email}`
-    )
-  ) || []
-);
+    JSON.parse(localStorage.getItem(`favorites_${user?.email}`)) || []
+  );
 
   useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
+    if (!user) navigate('/login');
   }, [user, navigate]);
 
   if (!user) return null;
 
   // ---------------- SEARCH STATES ----------------
+  const [discoverTab, setDiscoverTab] = useState('projects');
+  const [showProjectFilter, setShowProjectFilter] = useState(false);
+  const [showInternshipSort, setShowInternshipSort] = useState(false);
   const [instructorSearch, setInstructorSearch] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
-  const [projectDateSearch, setProjectDateSearch] =
-    useState('');
+  const [projectDateSearch, setProjectDateSearch] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
-  const [internshipSort, setInternshipSort] =
-  useState('newest');
+  const [internshipSort, setInternshipSort] = useState('newest');
+  const [internshipSearch, setInternshipSearch] = useState('');
+  const [internshipDateFilter, setInternshipDateFilter] = useState('');
 
   // ---------------- LOCAL STORAGE USERS ----------------
-  const users =
-    JSON.parse(localStorage.getItem('users')) || [];
+  const users = JSON.parse(localStorage.getItem('users')) || [];
 
   // ---------------- MOCK INSTRUCTORS ----------------
-const mockInstructors = [
-  {
-    userId: 'u4',
-    email: 'dr.ali@guc.com',
-    firstName: 'Ali',
-    lastName: 'Mahmoud',
-    subject: 'Data Structures',
-    status: 'accepted',
-  },
-  {
-    userId: 'u5',
-    email: 'dr.salma@guc.com',
-    firstName: 'Salma',
-    lastName: 'Hassan',
-    subject: 'Operating Systems',
-    status: 'accepted',
-  },
-  {
-    userId: 'u6',
-    email: 'dr.khaled@guc.com',
-    firstName: 'Khaled',
-    lastName: 'Mostafa',
-    subject: 'Machine Learning',
-    status: 'accepted',
-  },
-  {
-    userId: 'u7',
-    email: 'dr.nour@guc.com',
-    firstName: 'Nour',
-    lastName: 'Adel',
-    subject: 'Database Systems',
-    status: 'pending',
-  },
-  {
-    userId: 'u8',
-    email: 'dr.youssef@guc.com',
-    firstName: 'Youssef',
-    lastName: 'Tarek',
-    subject: 'Computer Networks',
-    status: 'accepted',
-  },
-  {
-    userId: 'u9',
-    email: 'dr.mona@guc.com',
-    firstName: 'Mona',
-    lastName: 'Fathy',
-    subject: 'Artificial Intelligence',
-    status: 'accepted',
-  },
-];
+  const mockInstructors = [
+    { userId: 'u4', email: 'dr.ali@guc.com', firstName: 'Ali', lastName: 'Mahmoud', subject: 'Data Structures', status: 'accepted' },
+    { userId: 'u5', email: 'dr.salma@guc.com', firstName: 'Salma', lastName: 'Hassan', subject: 'Operating Systems', status: 'accepted' },
+    { userId: 'u6', email: 'dr.khaled@guc.com', firstName: 'Khaled', lastName: 'Mostafa', subject: 'Machine Learning', status: 'accepted' },
+    { userId: 'u7', email: 'dr.nour@guc.com', firstName: 'Nour', lastName: 'Adel', subject: 'Database Systems', status: 'pending' },
+    { userId: 'u8', email: 'dr.youssef@guc.com', firstName: 'Youssef', lastName: 'Tarek', subject: 'Computer Networks', status: 'accepted' },
+    { userId: 'u9', email: 'dr.mona@guc.com', firstName: 'Mona', lastName: 'Fathy', subject: 'Artificial Intelligence', status: 'accepted' },
+  ];
 
-// ---------------- INTERNSHIP SEARCH STATE ----------------
-const [internshipSearch, setInternshipSearch] =
-  useState('');
+  // ---------------- MOCK INTERNSHIPS ----------------
+  const mockInternships = [
+    { id: 1, title: 'Frontend Developer Intern', company: 'Google', location: 'Cairo', postedDate: '2026-05-01' },
+    { id: 2, title: 'Backend Engineer Intern', company: 'Microsoft', location: 'Smart Village', postedDate: '2026-05-12' },
+    { id: 3, title: 'Software Engineering Intern', company: 'Amazon', location: 'Remote', postedDate: '2026-04-22' },
+    { id: 4, title: 'AI/ML Intern', company: 'OpenAI', location: 'Remote', postedDate: '2026-05-18' },
+    { id: 5, title: 'Full Stack Intern', company: 'Vodafone', location: 'New Cairo', postedDate: '2026-03-30' },
+    { id: 6, title: 'Mobile Developer Intern', company: 'Instabug', location: 'Cairo', postedDate: '2026-04-10' },
+    { id: 7, title: 'Cyber Security Intern', company: 'Orange', location: '6th October', postedDate: '2026-05-20' },
+    { id: 8, title: 'Cloud Engineer Intern', company: 'IBM', location: 'Smart Village', postedDate: '2026-02-15' },
+  ];
 
-// ---------------- MOCK INTERNSHIPS ----------------
-const mockInternships = [
-  {
-    id: 1,
-    title: 'Frontend Developer Intern',
-    company: 'Google',
-    location: 'Cairo',
-    postedDate: '2026-05-01',
-  },
-  {
-    id: 2,
-    title: 'Backend Engineer Intern',
-    company: 'Microsoft',
-    location: 'Smart Village',
-    postedDate: '2026-05-12',
-  },
-  {
-    id: 3,
-    title: 'Software Engineering Intern',
-    company: 'Amazon',
-    location: 'Remote',
-    postedDate: '2026-04-22',
-  },
-  {
-    id: 4,
-    title: 'AI/ML Intern',
-    company: 'OpenAI',
-    location: 'Remote',
-    postedDate: '2026-05-18',
-  },
-  {
-    id: 5,
-    title: 'Full Stack Intern',
-    company: 'Vodafone',
-    location: 'New Cairo',
-    postedDate: '2026-03-30',
-  },
-  {
-    id: 6,
-    title: 'Mobile Developer Intern',
-    company: 'Instabug',
-    location: 'Cairo',
-    postedDate: '2026-04-10',
-  },
-  {
-    id: 7,
-    title: 'Cyber Security Intern',
-    company: 'Orange',
-    location: '6th October',
-    postedDate: '2026-05-20',
-  },
-  {
-    id: 8,
-    title: 'Cloud Engineer Intern',
-    company: 'IBM',
-    location: 'Smart Village',
-    postedDate: '2026-02-15',
-  },
-];
-// ---------------- FILTERED INTERNSHIPS ----------------
-const [internshipDateFilter, setInternshipDateFilter] =
-  useState('');
-
-// ---------------- FILTERED INTERNSHIPS ----------------
-const filteredInternships = [...mockInternships]
-  .filter((internship) =>
-    `${internship.title} ${internship.company} ${internship.location}`
-      .toLowerCase()
-      .includes(internshipSearch.toLowerCase())
-  )
-  .sort((a, b) => {
-    if (internshipSort === 'newest') {
-      return (
-        new Date(b.postedDate) -
-        new Date(a.postedDate)
-      );
-    }
-
-    return (
-      new Date(a.postedDate) -
-      new Date(b.postedDate)
+  const filteredInternships = [...mockInternships]
+    .filter((i) => `${i.title} ${i.company} ${i.location}`.toLowerCase().includes(internshipSearch.toLowerCase()))
+    .sort((a, b) => internshipSort === 'newest'
+      ? new Date(b.postedDate) - new Date(a.postedDate)
+      : new Date(a.postedDate) - new Date(b.postedDate)
     );
-  });
-
 
   // ---------------- MOCK PROJECTS ----------------
   const mockProjects = [
-  {
-    id: 'p1',
-    title: 'Smart Campus Navigation System',
-    description:
-      'AR-based navigation system for GUC students.',
-    course: 'Bachelor Project',
-    createdAt: '2026-04-10',
-    rating: 5,
-    creatorId: 'demo',
-  },
-  {
-    id: 'p2',
-    title: 'AI Resume Analyzer',
-    description:
-      'Machine learning system for evaluating CVs.',
-    course: 'Software Engineering',
-    createdAt: '2026-03-22',
-    rating: 4,
-    creatorId: 'demo',
-  },
-  {
-    id: 'p3',
-    title: 'Hospital Queue Management',
-    description:
-      'Distributed system for patient scheduling.',
-    course: 'Operating Systems',
-    createdAt: '2026-05-01',
-    rating: 3,
-    creatorId: 'demo',
-  },
-  {
-    id: 'p4',
-    title: 'E-Commerce Recommendation Engine',
-    description:
-      'Recommendation system using collaborative filtering.',
-    course: 'Machine Learning',
-    createdAt: '2026-02-18',
-    rating: 5,
-    creatorId: 'demo',
-  },
-  {
-    id: 'p5',
-    title: 'Autonomous Delivery Robot',
-    description:
-      'Embedded systems project for indoor delivery robots.',
-    course: 'Embedded Systems',
-    createdAt: '2026-01-30',
-    rating: 2,
-    creatorId: 'demo',
-  },
-];
-
-const storedProjects =
-  JSON.parse(localStorage.getItem('projects')) || [];
-  // ---------------- MOCK STUDENTS ----------------
-  // ---------------- MOCK STUDENTS ----------------
-const mockStudents = [
-  {
-    firstName: 'Ahmed',
-    lastName: 'Karam',
-    email: 'ahmed@student.guc.edu.eg',
-    role: 'student',
-    skills: ['React', 'Node.js', 'MongoDB'],
-  },
-  {
-    firstName: 'Sara',
-    lastName: 'Mohamed',
-    email: 'sara@student.guc.edu.eg',
-    role: 'student',
-    skills: ['UI/UX', 'Figma', 'Frontend'],
-  },
-  {
-    firstName: 'Omar',
-    lastName: 'Khaled',
-    email: 'omar@student.guc.edu.eg',
-    role: 'student',
-    skills: ['Java', 'Spring Boot', 'SQL'],
-  },
-  {
-    firstName: 'Mariam',
-    lastName: 'Tarek',
-    email: 'mariam@student.guc.edu.eg',
-    role: 'student',
-    skills: ['Python', 'Machine Learning', 'TensorFlow'],
-  },
-  {
-    firstName: 'Yassin',
-    lastName: 'Hesham',
-    email: 'yassin@student.guc.edu.eg',
-    role: 'student',
-    skills: ['Cyber Security', 'Networking', 'Linux'],
-  },
-  {
-    firstName: 'Lina',
-    lastName: 'Adel',
-    email: 'lina@student.guc.edu.eg',
-    role: 'student',
-    skills: ['Flutter', 'Firebase', 'Mobile Development'],
-  },
-];
-
-  // ---------------- COMBINED STUDENTS ----------------
-  const allStudents = [
-    ...mockStudents,
-    ...users.filter((u) => u.role === 'student'),
+    { id: 'p1', title: 'Smart Campus Navigation System', description: 'AR-based navigation system for GUC students.', course: 'Bachelor Project', createdAt: '2026-04-10', rating: 5, creatorId: 'demo' },
+    { id: 'p2', title: 'AI Resume Analyzer', description: 'Machine learning system for evaluating CVs.', course: 'Software Engineering', createdAt: '2026-03-22', rating: 4, creatorId: 'demo' },
+    { id: 'p3', title: 'Hospital Queue Management', description: 'Distributed system for patient scheduling.', course: 'Operating Systems', createdAt: '2026-05-01', rating: 3, creatorId: 'demo' },
+    { id: 'p4', title: 'E-Commerce Recommendation Engine', description: 'Recommendation system using collaborative filtering.', course: 'Machine Learning', createdAt: '2026-02-18', rating: 5, creatorId: 'demo' },
+    { id: 'p5', title: 'Autonomous Delivery Robot', description: 'Embedded systems project for indoor delivery robots.', course: 'Embedded Systems', createdAt: '2026-01-30', rating: 2, creatorId: 'demo' },
   ];
 
+  const storedProjects = JSON.parse(localStorage.getItem('projects')) || [];
+
+  // ---------------- MOCK STUDENTS ----------------
+  const mockStudents = [
+    { firstName: 'Ahmed', lastName: 'Karam', email: 'ahmed@student.guc.edu.eg', role: 'student', skills: ['React', 'Node.js', 'MongoDB'] },
+    { firstName: 'Sara', lastName: 'Mohamed', email: 'sara@student.guc.edu.eg', role: 'student', skills: ['UI/UX', 'Figma', 'Frontend'] },
+    { firstName: 'Omar', lastName: 'Khaled', email: 'omar@student.guc.edu.eg', role: 'student', skills: ['Java', 'Spring Boot', 'SQL'] },
+    { firstName: 'Mariam', lastName: 'Tarek', email: 'mariam@student.guc.edu.eg', role: 'student', skills: ['Python', 'Machine Learning', 'TensorFlow'] },
+    { firstName: 'Yassin', lastName: 'Hesham', email: 'yassin@student.guc.edu.eg', role: 'student', skills: ['Cyber Security', 'Networking', 'Linux'] },
+    { firstName: 'Lina', lastName: 'Adel', email: 'lina@student.guc.edu.eg', role: 'student', skills: ['Flutter', 'Firebase', 'Mobile Development'] },
+  ];
+
+  const allStudents = [...mockStudents, ...users.filter((u) => u.role === 'student')];
+  const allProjects = [...mockProjects, ...storedProjects];
+
   // ---------------- FILTERING ----------------
-  const filteredInstructors = mockInstructors.filter(
-  (instructor) =>
-    `${instructor.firstName} 
-     ${instructor.lastName} 
-     ${instructor.email} 
-     ${instructor.subject}`
-      .toLowerCase()
-      .includes(instructorSearch.toLowerCase())
-);
+  const filteredInstructors = mockInstructors.filter((i) =>
+    `${i.firstName} ${i.lastName} ${i.email} ${i.subject}`.toLowerCase().includes(instructorSearch.toLowerCase())
+  );
 
-const allProjects = [
-  ...mockProjects,
-  ...storedProjects,
-];
+  const filteredProjects = allProjects.filter((p) => {
+    const matchesSearch = `${p.title} ${p.description} ${p.course}`.toLowerCase().includes(projectSearch.toLowerCase());
+    const matchesDate = projectDateSearch === '' || p.createdAt?.includes(projectDateSearch);
+    const matchesRating = projectRatingFilter === 0 || (p.rating || 0) >= projectRatingFilter;
+    return matchesSearch && matchesDate && matchesRating;
+  });
 
-const filteredProjects = allProjects.filter(
-  (project) => {
-    const matchesSearch =
-      `${project.title} ${project.description} ${project.course}`
-        .toLowerCase()
-        .includes(projectSearch.toLowerCase());
-
-    const matchesDate =
-      projectDateSearch === '' ||
-      project.createdAt?.includes(projectDateSearch);
-
-    const matchesRating =
-      projectRatingFilter === 0 ||
-      (project.rating || 0) >= projectRatingFilter;
-
-    return (
-      matchesSearch &&
-      matchesDate &&
-      matchesRating
-    );
-  }
-);
-
-  const filteredStudents = allStudents.filter(
-  (student) =>
-    `
-      ${student.firstName}
-      ${student.lastName}
-      ${student.email}
-      ${(student.skills || []).join(' ')}
-    `
-      .toLowerCase()
-      .includes(studentSearch.toLowerCase())
-);
+  const filteredStudents = allStudents.filter((s) =>
+    `${s.firstName} ${s.lastName} ${s.email} ${(s.skills || []).join(' ')}`.toLowerCase().includes(studentSearch.toLowerCase())
+  );
 
   // ---------------- HELPERS ----------------
-  const toggleRead = (id) => {
-    setNotifications((prev) =>
-      prev.map((n) =>
-        n.id === id ? { ...n, read: !n.read } : n
-      )
-    );
-  };
-
-  const unreadCount = notifications.filter(
-    (n) => !n.read
-  ).length;
+  const toggleRead = (id) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: !n.read } : n));
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const sendMessage = () => {
     if (!chatInput.trim()) return;
-
-    const newMessage = {
-      id: Date.now(),
-      sender:  user.firstName || user.companyName,
-      message: chatInput,
-    };
-
-    setChatMessages((prev) => [...prev, newMessage]);
+    setChatMessages((prev) => [...prev, { id: Date.now(), sender: user.firstName || user.companyName, message: chatInput }]);
     setChatInput('');
   };
 
-  const toggleSetting = (key) => {
-    setSettings((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+  const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const togglePortfolioFavorite = (student) => {
+    const alreadyExists = favorites.some((fav) => fav.email === student.email);
+    const updatedFavorites = alreadyExists
+      ? favorites.filter((fav) => fav.email !== student.email)
+      : [...favorites, { type: 'portfolio', ...student }];
+    setFavorites(updatedFavorites);
+    localStorage.setItem(`favorites_${user.email}`, JSON.stringify(updatedFavorites));
   };
 
-// ---------------- FAVORITES ----------------
-// ---------------- PORTFOLIO FAVORITES ----------------
-const togglePortfolioFavorite = (
-  student
-) => {
-  const alreadyExists = favorites.some(
-    (fav) =>
-      fav.email === student.email
-  );
-
-  let updatedFavorites;
-
-  if (alreadyExists) {
-    updatedFavorites = favorites.filter(
-      (fav) =>
-        fav.email !== student.email
-    );
-  } else {
-    updatedFavorites = [
-      ...favorites,
-      {
-        type: 'portfolio',
-        ...student,
-      },
-    ];
-  }
-
-  setFavorites(updatedFavorites);
-
-  localStorage.setItem(
-    `favorites_${user.email}`,
-    JSON.stringify(updatedFavorites)
-  );
-};
-
-
   // ---------------- DASHBOARDS ----------------
+  const StudentDashboard = () => (
+    <div className="space-y-6">
+      {/* FIND INTERNSHIPS */}
+      <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-900">Find Internships</h2>
+          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">New Opportunities</span>
+        </div>
 
-
-const StudentDashboard = () => (
-  <div className="space-y-8">
-    {/* FIND INTERNSHIPS */}
-    <section className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[#064e3b]">
-          Find Internships
-        </h2>
-
-        <span className="bg-[#ecfdf5] text-[#059669] px-4 py-1 rounded-full text-sm font-medium">
-          New Opportunities
-        </span>
-      </div>
-
-      {/* SEARCH + SORT */}
-      <div className="flex flex-col lg:flex-row gap-4 mb-6">
-        {/* SEARCH */}
-        <input
-          type="text"
-          value={internshipSearch}
-          onChange={(e) =>
-            setInternshipSearch(e.target.value)
-          }
-          placeholder="Search by title or company name..."
-          className="flex-1 bg-[#f9fafb] border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#10b981]"
-        />
-
-        {/* SORT BY DATE */}
-        <select
-          value={internshipSort}
-          onChange={(e) =>
-            setInternshipSort(e.target.value)
-          }
-          className="bg-[#f9fafb] border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#10b981] text-gray-600 min-w-[220px]"
-        >
-          <option value="newest">
-            Newest First
-          </option>
-
-          <option value="oldest">
-            Oldest First
-          </option>
-        </select>
-
-        {/* SEARCH BUTTON */}
-        <button className="bg-[#059669] text-white font-bold py-3 px-10 rounded-xl shadow-md hover:bg-[#047857]">
-          Search
-        </button>
-      </div>
-
-      {/* INTERNSHIP RESULTS */}
-<div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-  {filteredInternships.length > 0 ? (
-    filteredInternships.map((internship) => (
-      <div
-        key={internship.id}
-        className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[#111827] font-bold text-lg">
-              {internship.title}
-            </p>
-
-            <p className="text-[#059669] font-semibold mt-1">
-              {internship.company}
-            </p>
-
-            <p className="text-gray-400 text-sm mt-2">
-              {internship.location}
-            </p>
-
-            <p className="text-xs text-[#059669] mt-2 font-medium">
-              Posted: {internship.postedDate}
-            </p>
+        <div className="flex flex-col gap-3 lg:flex-row mb-6">
+          <input
+            type="text"
+            value={internshipSearch}
+            onChange={(e) => setInternshipSearch(e.target.value)}
+            placeholder="Search by title or company name..."
+            className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+          />
+          <div className="relative">
+            <button
+              onClick={() => setShowInternshipSort(prev => !prev)}
+              className={`flex min-w-[160px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${showInternshipSort ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+                <line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+              </svg>
+              <span>{internshipSort === 'newest' ? 'Newest First' : 'Oldest First'}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {showInternshipSort && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                {[
+                  { value: 'newest', label: 'Newest First' },
+                  { value: 'oldest', label: 'Oldest First' },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setInternshipSort(opt.value); setShowInternshipSort(false); }}
+                    className={`flex w-full items-center gap-2 px-4 py-3 text-sm transition hover:bg-slate-50 ${internshipSort === opt.value ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${internshipSort === opt.value ? 'bg-emerald-500' : 'bg-transparent'}`} />
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-
-          {/* SELECT BUTTON */}
-          <button className="bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-            Select
-          </button>
         </div>
-      </div>
-    ))
-  ) : (
-    <p className="text-gray-400 text-sm">
-      No internships found
-    </p>
-  )}
-</div>
-      
-    </section>
 
-    {/* LOWER CARDS */}
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {/* RECOMMENDED PROJECTS */}
-      <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <h3 className="text-[#059669] font-bold mb-2 uppercase text-xs tracking-widest">
-          Recommended Projects
-        </h3>
-
-        <p className="text-[#111827] text-lg font-semibold italic">
-          University HR Management System
-        </p>
-
-        <div className="mt-4 bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <p className="text-sm text-gray-400 uppercase tracking-widest font-bold mb-2">
-            Project Details
-          </p>
-
-          <p className="text-[#111827] font-medium">
-            Full-stack HR platform for managing employee
-            records, recruitment workflows, payroll systems,
-            and analytics.
-          </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredInternships.length > 0 ? filteredInternships.map((internship) => (
+            <div key={internship.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-semibold text-slate-900">{internship.title}</p>
+                  <p className="mt-1 text-sm font-medium text-emerald-600">{internship.company}</p>
+                  <p className="mt-1 text-xs text-slate-400">{internship.location}</p>
+                  <p className="mt-1 text-xs text-slate-400">Posted: {internship.postedDate}</p>
+                </div>
+                <button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">
+                  Select
+                </button>
+              </div>
+            </div>
+          )) : (
+            <p className="text-sm italic text-slate-400">No internships found.</p>
+          )}
         </div>
       </div>
 
-      {/* ACTIVE APPLICATIONS */}
-      <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
-        <h3 className="text-gray-400 font-bold mb-2 uppercase text-xs tracking-widest">
-          Active Applications
-        </h3>
-
-        <p className="text-[#111827] text-lg font-semibold">
-          PulseCare Remote Clinic - Pending
-        </p>
-
-        <div className="mt-4 bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 shadow-sm">
-          <p className="text-sm text-gray-400 uppercase tracking-widest font-bold mb-2">
-            Application Status
-          </p>
-
-          <p className="text-[#111827] font-medium">
-            Your internship application is currently under
-            review by the company recruitment team.
-          </p>
+      {/* LOWER CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-600">Recommended Projects</p>
+          <p className="text-lg font-semibold text-slate-900">University HR Management System</p>
+          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Project Details</p>
+            <p className="text-sm text-slate-700">Full-stack HR platform for managing employee records, recruitment workflows, payroll systems, and analytics.</p>
+          </div>
+        </div>
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Active Applications</p>
+          <p className="text-lg font-semibold text-slate-900">PulseCare Remote Clinic — Pending</p>
+          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Application Status</p>
+            <p className="text-sm text-slate-700">Your internship application is currently under review by the company recruitment team.</p>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
-
-
+  );
 
   const InstructorDashboard = () => {
-  const recommendedProjects = [
-    {
-      id: 1,
-      title: 'AI Resume Analyzer',
-      field: 'Machine Learning',
-      students: 3,
-    },
-    {
-      id: 2,
-      title: 'Smart Hospital System',
-      field: 'Software Engineering',
-      students: 5,
-    },
-    {
-      id: 3,
-      title: 'Campus Navigation App',
-      field: 'Mobile Development',
-      students: 2,
-    },
-    {
-      id: 4,
-      title: 'Cyber Security Threat Detector',
-      field: 'Cyber Security',
-      students: 4,
-    },
-  ];
-
-  return (
-    <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-      <h2 className="text-2xl font-bold text-[#064e3b] mb-6">
-        Instructor Review Panel
-      </h2>
-
-      <button className="p-6 bg-[#f0fdf4] border border-[#d1fae5] rounded-2xl text-[#065f46] font-bold hover:bg-[#d1fae5] transition">
-        Review Student Portfolios
-      </button>
-
-      {/* RECOMMENDED PROJECTS */}
-      <div className="mt-10">
-        <h3 className="text-lg font-bold text-[#111827] mb-4">
-          Recommended Projects
-        </h3>
-
+    const recommendedProjects = [
+      { id: 1, title: 'AI Resume Analyzer', field: 'Machine Learning', students: 3 },
+      { id: 2, title: 'Smart Hospital System', field: 'Software Engineering', students: 5 },
+      { id: 3, title: 'Campus Navigation App', field: 'Mobile Development', students: 2 },
+      { id: 4, title: 'Cyber Security Threat Detector', field: 'Cyber Security', students: 4 },
+    ];
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-slate-900">Instructor Review Panel</h2>
+          <button className="rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100">
+            Review Student Portfolios
+          </button>
+        </div>
+        <h3 className="mb-4 text-sm font-semibold text-slate-700">Recommended Projects</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {recommendedProjects.map((project) => (
-            <div
-              key={project.id}
-              className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all"
-            >
-              <p className="text-[#111827] font-bold text-lg">
-                {project.title}
-              </p>
-
-              <p className="text-[#059669] text-sm font-medium mt-1">
-                {project.field}
-              </p>
-
-              <p className="text-gray-400 text-sm mt-3">
-                Interested Students: {project.students}
-              </p>
-
-              <button className="mt-4 bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
+            <div key={project.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+              <p className="font-semibold text-slate-900">{project.title}</p>
+              <p className="mt-1 text-sm text-emerald-600">{project.field}</p>
+              <p className="mt-2 text-xs text-slate-400">Interested Students: {project.students}</p>
+              <button className="mt-4 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">
                 View Project
               </button>
             </div>
           ))}
         </div>
       </div>
-    </div>
-  );
-};
- const EmployerDashboard = () => {
-  const recommendedProjects = [
-    {
-      id: 1,
-      title: 'AI Resume Analyzer',
-      field: 'Machine Learning',
-      companyFit: 'Great for AI recruitment systems',
-      rating: 5,
-    },
-    {
-      id: 2,
-      title: 'Smart Hospital System',
-      field: 'Software Engineering',
-      companyFit: 'Useful for healthcare platforms',
-      rating: 4,
-    },
-    {
-      id: 3,
-      title: 'Campus Navigation App',
-      field: 'Mobile Development',
-      companyFit: 'Strong mobile UI/UX implementation',
-      rating: 4,
-    },
-    {
-      id: 4,
-      title: 'Cyber Security Threat Detector',
-      field: 'Cyber Security',
-      companyFit: 'Relevant for enterprise security',
-      rating: 5,
-    },
-  ];
+    );
+  };
 
-  return (
-    <div className="space-y-8">
-      {/* EMPLOYER HEADER */}
-      <div className="bg-gradient-to-r from-[#059669] to-[#10b981] rounded-3xl p-8 flex justify-between items-center text-white">
-        <div>
-          <h3 className="font-bold text-2xl mb-2 text-white">
-            Employer Hub
-          </h3>
-
-          <p className="opacity-90 italic text-white">
-            Find the best student projects and talent.
-          </p>
-        </div>
-
-        <button className="bg-white text-[#059669] font-bold py-3 px-8 rounded-xl shadow-lg hover:bg-gray-50">
-          Post Internship
-        </button>
-      </div>
-
-      {/* RECOMMENDED PROJECTS */}
-      <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-        <h2 className="text-2xl font-bold text-[#064e3b] mb-6">
-          Recommended Student Projects
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {recommendedProjects.map((project) => (
-            <div
-              key={project.id}
-              className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-5 hover:shadow-md transition-all"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-[#111827] font-bold text-lg">
-                    {project.title}
-                  </p>
-
-                  <p className="text-[#059669] text-sm font-medium mt-1">
-                    {project.field}
-                  </p>
-                </div>
-
-                <p className="text-yellow-500 text-sm">
-                  {'⭐'.repeat(project.rating)}
-                </p>
-              </div>
-
-              <p className="text-gray-500 text-sm mt-4">
-                {project.companyFit}
-              </p>
-
-              <div className="mt-5 flex gap-3">
-                <button className="bg-[#059669] hover:bg-[#047857] text-white text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-                  View Project
-                </button>
-
-                <button className="border border-[#059669] text-[#059669] hover:bg-[#ecfdf5] text-sm font-semibold px-4 py-2 rounded-xl transition-all">
-                  Contact Student
-                </button>
-              </div>
+  const EmployerDashboard = () => {
+    const recommendedProjects = [
+      { id: 1, title: 'AI Resume Analyzer', field: 'Machine Learning', companyFit: 'Great for AI recruitment systems', rating: 5 },
+      { id: 2, title: 'Smart Hospital System', field: 'Software Engineering', companyFit: 'Useful for healthcare platforms', rating: 4 },
+      { id: 3, title: 'Campus Navigation App', field: 'Mobile Development', companyFit: 'Strong mobile UI/UX implementation', rating: 4 },
+      { id: 4, title: 'Cyber Security Threat Detector', field: 'Cyber Security', companyFit: 'Relevant for enterprise security', rating: 5 },
+    ];
+    return (
+      <div className="space-y-6">
+        {/* EMPLOYER HEADER CARD */}
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-emerald-700">Employer Hub</span>
+              <h2 className="mt-3 text-2xl font-semibold text-slate-900">Find the best student talent.</h2>
+              <p className="mt-1 text-sm text-slate-500">Browse top-rated projects and connect with students.</p>
             </div>
-          ))}
+            <button className="rounded-full bg-slate-900 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800">
+              Post Internship
+            </button>
+          </div>
+        </div>
+
+        {/* RECOMMENDED PROJECTS */}
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+          <h2 className="mb-6 text-xl font-semibold text-slate-900">Recommended Student Projects</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {recommendedProjects.map((project) => (
+              <div key={project.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-900">{project.title}</p>
+                    <p className="mt-1 text-sm text-emerald-600">{project.field}</p>
+                  </div>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} viewBox="0 0 24 24" className={`h-4 w-4 ${s <= project.rating ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}>
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-3 text-sm text-slate-500">{project.companyFit}</p>
+                <div className="mt-4 flex gap-2">
+                  <button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">View Project</button>
+                  <button className="rounded-full border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Contact Student</button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
-  return (
-    <div className="min-h-screen bg-[#fcfaf7] font-sans text-gray-900 relative">
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] bg-[#d1fae5] blur-[120px] rounded-full opacity-60"></div>
+    );
+  };
 
-        <div className="absolute bottom-[5%] left-[-5%] w-[40%] h-[40%] bg-[#fef3c7] blur-[100px] rounded-full opacity-40"></div>
+  // ---------------- RENDER ----------------
+  return (
+    <div className="min-h-screen bg-[#f7f4ee] text-slate-900 antialiased">
+      {/* Background blobs — same as Landing */}
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-200/70 blur-3xl" />
+        <div className="absolute right-[-6%] top-20 h-[360px] w-[360px] rounded-full bg-emerald-200/60 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_55%),radial-gradient(circle_at_20%_70%,rgba(251,191,36,0.18),transparent_55%)]" />
       </div>
 
       {/* CHAT BUTTON */}
       <button
         onClick={() => setShowChat(true)}
-        className="fixed bottom-8 right-8 z-50 bg-[#059669] hover:bg-[#047857] text-white w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-all"
+        className="fixed bottom-8 right-8 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-xl shadow-emerald-600/30 transition hover:-translate-y-0.5 hover:bg-emerald-500 text-xl"
       >
         💬
       </button>
 
       {/* CHAT MODAL */}
       {showChat && (
-        <div className="fixed bottom-28 right-8 w-[90%] md:w-[380px] h-[500px] bg-white rounded-3xl shadow-2xl border border-gray-100 z-50 flex flex-col overflow-hidden">
-          <div className="bg-[#059669] text-white px-5 py-4 flex items-center justify-between">
-            <h3 className="font-bold text-lg">
-              ProjectFolio Chat
-            </h3>
-
-            <button
-              onClick={() => setShowChat(false)}
-              className="text-xl"
-            >
-              ✕
-            </button>
+        <div className="fixed bottom-28 right-8 z-50 flex h-[480px] w-[90%] max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl backdrop-blur">
+          <div className="flex items-center justify-between bg-emerald-600 px-5 py-4 text-white">
+            <h3 className="font-semibold">ProjectFolio Chat</h3>
+            <button onClick={() => setShowChat(false)} className="text-white/80 hover:text-white transition">✕</button>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-[#f9fafb]">
+          <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4">
             {chatMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`max-w-[80%] p-3 rounded-2xl ${
-                  msg.sender === user.firstName
-                    ? 'ml-auto bg-[#059669] text-white'
-                    : 'bg-white border border-gray-100'
-                }`}
-              >
-                <p className="text-xs font-bold mb-1">
-                  {msg.sender}
-                </p>
-
+              <div key={msg.id} className={`max-w-[80%] rounded-2xl p-3 ${msg.sender === (user.firstName || user.companyName) ? 'ml-auto bg-emerald-600 text-white' : 'bg-white border border-slate-100'}`}>
+                <p className="mb-1 text-xs font-semibold opacity-70">{msg.sender}</p>
                 <p className="text-sm">{msg.message}</p>
               </div>
             ))}
           </div>
-
-          <div className="p-4 border-t border-gray-100 flex gap-2">
+          <div className="flex gap-2 border-t border-slate-100 p-4">
             <input
               type="text"
               value={chatInput}
-              onChange={(e) =>
-                setChatInput(e.target.value)
-              }
+              onChange={(e) => setChatInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
               placeholder="Type a message..."
-              className="flex-1 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#10b981]"
+              className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
             />
-
-            <button
-              onClick={sendMessage}
-              className="bg-[#059669] hover:bg-[#047857] text-white px-5 rounded-xl font-semibold"
-            >
+            <button onClick={sendMessage} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
               Send
             </button>
           </div>
         </div>
       )}
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12">
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-10 sm:px-6">
         {/* HEADER */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between mb-16 gap-6">
+        <header className="mb-12 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="flex items-center gap-2 mb-2 text-[#059669] font-bold tracking-widest text-xs uppercase">
-              <span className="w-8 h-[2px] bg-[#059669]"></span>
-              WELCOME BACK
+            <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-emerald-600">
+              <span className="h-px w-8 bg-emerald-500" />
+              Welcome back
             </div>
-
-            <h1 className="text-5xl font-extrabold text-[#111827] tracking-tight italic">
-              Hello,{' '}
-              <span className="text-[#059669]">
-                {user.firstName}
-              </span>
+            <h1 className="text-4xl font-semibold tracking-tight text-slate-900 md:text-5xl">
+              Hello, <span className="text-emerald-600">{user.firstName || user.companyName}</span>
             </h1>
-
-            <p className="mt-3 text-gray-500 text-sm capitalize">
-              Logged in as: {user.role}
-            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                {allProjects.length} Projects
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
+                {unreadCount} Unread
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-semibold text-slate-600 shadow-sm">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                {favorites.length} Saved
+              </span>
+            </div>
+            <p className="mt-2 text-sm capitalize text-slate-500">Logged in as: {user.role}</p>
           </div>
 
-         <div className="flex gap-3 relative items-center">
+          <div className="relative flex items-center gap-3">
+            {/* CREATE PROJECT — students only */}
+            {user.role === 'student' && (
+              <button
+                onClick={() => navigate('/create')}
+                className="rounded-full bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition hover:-translate-y-0.5 hover:bg-emerald-500"
+              >
+                + Create Project
+              </button>
+            )}
 
- 
-  {/* PROFILE BUTTON */}
-<button
-  onClick={() => navigate('/profile')}
-  className="bg-white border border-gray-200 hover:bg-gray-50 text-[#111827] w-12 h-12 rounded-xl font-semibold transition-all shadow-sm flex items-center justify-center text-xl"
->
-  👤
-</button>
+            {/* PROFILE */}
+            <button
+              onClick={() => navigate('/profile')}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-lg shadow-sm transition hover:bg-white"
+            >
+              👤
+            </button>
+
             {/* NOTIFICATIONS */}
             <button
-              onClick={() =>
-                setShowNotifications(!showNotifications)
-              }
-              className="bg-white border border-gray-200 p-3 rounded-xl hover:bg-gray-50 transition shadow-sm relative z-20"
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 shadow-sm transition hover:bg-white"
             >
               🔔
-
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="absolute right-2 top-2 h-2 w-2 animate-pulse rounded-full bg-red-500" />
               )}
             </button>
 
             {/* NOTIFICATION DROPDOWN */}
             {showNotifications && (
-              <div className="absolute top-full right-20 mt-2 w-96 bg-white border border-gray-100 rounded-3xl shadow-2xl z-50 overflow-hidden">
-                <div className="bg-[#059669] px-5 py-4 text-white flex items-center justify-between">
-                  <h3 className="font-bold text-lg">
-                    Notifications
-                  </h3>
-
-                  <span className="bg-white text-[#059669] text-xs px-3 py-1 rounded-full font-bold">
-                    {unreadCount} New
-                  </span>
+              <div className="absolute right-16 top-full z-50 mt-2 w-96 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between bg-emerald-600 px-5 py-4 text-white">
+                  <h3 className="font-semibold">Notifications</h3>
+                  <span className="rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold">{unreadCount} New</span>
                 </div>
-
-                <div className="max-h-[400px] overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
                   {notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className="p-4 border-b border-gray-100 hover:bg-[#f9fafb] transition flex gap-3"
-                    >
-                      <div
-                        className={`w-3 h-3 mt-2 rounded-full ${
-                          n.read
-                            ? 'bg-gray-300'
-                            : 'bg-[#059669]'
-                        }`}
-                      ></div>
-
+                    <div key={n.id} className="flex gap-3 p-4 transition hover:bg-slate-50">
+                      <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read ? 'bg-slate-200' : 'bg-emerald-500'}`} />
                       <div className="flex-1">
-                        <p
-                          className={`text-sm ${
-                            n.read
-                              ? 'text-gray-400'
-                              : 'text-gray-700 font-medium'
-                          }`}
-                        >
-                          {n.text}
-                        </p>
-
-                        <button
-                          onClick={() => toggleRead(n.id)}
-                          className="mt-2 text-xs text-[#059669] font-semibold hover:underline"
-                        >
-                          {n.read
-                            ? 'Mark as unread'
-                            : 'Mark as read'}
+                        <p className={`text-sm ${n.read ? 'text-slate-400' : 'font-medium text-slate-700'}`}>{n.text}</p>
+                        <button onClick={() => toggleRead(n.id)} className="mt-1 text-xs font-semibold text-emerald-600 hover:underline">
+                          {n.read ? 'Mark as unread' : 'Mark as read'}
                         </button>
                       </div>
                     </div>
@@ -975,359 +469,252 @@ const StudentDashboard = () => (
               </div>
             )}
 
+            {/* SETTINGS */}
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 shadow-sm transition hover:bg-white"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 text-slate-500">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+            </button>
+
+            {/* SETTINGS DROPDOWN */}
+            {showSettings && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between bg-slate-800 px-5 py-4 text-white">
+                  <h3 className="font-semibold">Notification Preferences</h3>
+                  <button onClick={() => setShowSettings(false)} className="text-white/70 hover:text-white transition">✕</button>
+                </div>
+                <div className="divide-y divide-slate-100 p-2">
+                  {[
+                    { key: 'allNotifications', label: 'All Notifications' },
+                    { key: 'cookies', label: 'Save Cookies' },
+                    { key: 'emailNotifications', label: 'Email Notifications' },
+                    { key: 'pushNotifications', label: 'Push Notifications' },
+                  ].map((item) => (
+                    <div key={item.key} className="flex items-center justify-between rounded-2xl px-4 py-3 transition hover:bg-slate-50">
+                      <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                      <button
+                        onClick={() => toggleSetting(item.key)}
+                        className={`relative h-6 w-12 rounded-full transition-colors ${settings[item.key] ? 'bg-emerald-500' : 'bg-slate-200'}`}
+                      >
+                        <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${settings[item.key] ? 'left-7' : 'left-0.5'}`} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* SIGN OUT */}
             <button
-              onClick={() => {
-                localStorage.removeItem('user');
-                navigate('/login');
-              }}
-              className="bg-[#111827] hover:bg-black text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg"
+              onClick={() => { localStorage.removeItem('user'); navigate('/login'); }}
+              className="rounded-full border border-slate-200 bg-white/80 px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white"
             >
               Sign Out
             </button>
           </div>
         </header>
 
-        {/* SEARCH SECTION */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* INSTRUCTOR SEARCH */}
-          <div className="bg-white/60 backdrop-blur-sm border border-white p-5 rounded-2xl shadow-sm">
-            <label className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 block">
-              Instructor Directory
-            </label>
-
-            <input
-              type="text"
-              value={instructorSearch}
-              onChange={(e) =>
-                setInstructorSearch(e.target.value)
-              }
-              placeholder="Search instructors..."
-              className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
-            />
-
-   {instructorSearch.trim() !== '' && (
-  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-    {filteredInstructors.length > 0 ? (
-      filteredInstructors.map((instructor) => (
-        <div
-          key={instructor.userId}
-          className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
-        >
-          <p className="font-semibold text-[#111827]">
-            {instructor.firstName}{' '}
-            {instructor.lastName}
-          </p>
-
-          <p className="text-gray-500">
-            {instructor.email}
-          </p>
-
-          <p className="text-[#059669] text-xs mt-1 font-medium">
-            Subject: {instructor.subject}
-          </p>
-        </div>
-      ))
-    ) : (
-      <p className="text-sm text-gray-400 px-2">
-        No instructors found
-      </p>
-    )}
-  </div>
-)}
-
-</div>
-
-{/* PROJECT SEARCH */}
-
-        {/* PROJECT SEARCH */}
-<div className="bg-white/60 backdrop-blur-sm border border-white p-5 rounded-2xl shadow-sm">
-  <label className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 block">
-    Project Library
-  </label>
-
-  <div className="space-y-3">
-    {/* SEARCH INPUT */}
-    <input
-      type="text"
-      value={projectSearch}
-      onChange={(e) =>
-        setProjectSearch(e.target.value)
-      }
-      placeholder="Search projects..."
-      className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
-    />
-
-    {/* DATE FILTER */}
-    <input
-      type="date"
-      value={projectDateSearch}
-      onChange={(e) =>
-        setProjectDateSearch(e.target.value)
-      }
-      className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none text-gray-500"
-    />
-
-    {/* RATING FILTER */}
-    <div className="flex items-center gap-1 mt-2">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          type="button"
-          onMouseEnter={() =>
-            setHoveredRating(star)
-          }
-          onMouseLeave={() =>
-            setHoveredRating(0)
-          }
-          onClick={() =>
-            setProjectRatingFilter(star)
-          }
-          className="text-2xl transition-all"
-        >
-          {star <=
-          (hoveredRating ||
-            projectRatingFilter)
-            ? '⭐'
-            : '☆'}
-        </button>
-      ))}
-
-      {projectRatingFilter > 0 && (
-        <button
-          onClick={() =>
-            setProjectRatingFilter(0)
-          }
-          className="ml-3 text-xs text-red-500 hover:underline"
-        >
-          Clear
-        </button>
-      )}
-    </div>
-  </div>
-
-  {(projectSearch.trim() !== '' ||
-    projectDateSearch !== '' ||
-    projectRatingFilter > 0) && (
-    <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-      {filteredProjects.length > 0 ? (
-        filteredProjects.map((project) => (
-          <div
-  key={project.id}
-  onClick={() =>
-    navigate(`/project/${project.id}`)
-  }
-  className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100 cursor-pointer hover:border-[#10b981] hover:shadow-sm transition"
->
-            <p className="font-semibold text-[#111827]">
-              {project.title}
-            </p>
-
-            <p className="text-gray-500 text-xs">
-              {project.course}
-            </p>
-
-            {/* PROJECT RATING */}
-            <p className="text-yellow-500 text-sm mt-1">
-              {'⭐'.repeat(project.rating)}
-            </p>
-
-            <p className="text-[#059669] text-xs mt-1">
-              Created: {project.createdAt}
-            </p>
-
-<div className="mt-3 flex gap-2">
-  <button
-    onClick={() =>
-      navigate(`/project/${project.id}`)
-    }
-    className="bg-[#059669] hover:bg-[#047857] text-white text-xs px-3 py-2 rounded-lg font-semibold"
-  >
-    View Project
-  </button>
-
-  <button
-    onClick={() =>
-      toggleFavorite(project)
-    }
-    className={`text-xs px-3 py-2 rounded-lg font-semibold transition ${
-      favorites.some(
-        (fav) => fav.id === project.id
-      )
-        ? 'bg-red-100 text-red-600'
-        : 'bg-yellow-100 text-yellow-700'
-    }`}
-  >
-    {favorites.some(
-      (fav) => fav.id === project.id
-    )
-      ? '★ Favorited'
-      : '☆ Add to Favorites'}
-  </button>
-</div>
-
-          </div>
-        ))
-      ) : (
-        <p className="text-sm text-gray-400 px-2">
-          No projects found
-        </p>
-      )}
-    </div>
-            )}
-          </div>
-
-          {/* STUDENT SEARCH */}
-          <div className="bg-white/60 backdrop-blur-sm border border-white p-5 rounded-2xl shadow-sm">
-            <label className="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-2 block">
-              Student Portfolios
-            </label>
-
-            <input
-              type="text"
-              value={studentSearch}
-              onChange={(e) =>
-                setStudentSearch(e.target.value)
-              }
-              placeholder="Search name or email..."
-              className="w-full bg-white border border-gray-100 rounded-xl p-3 text-sm focus:border-[#10b981] outline-none"
-            />
-
-           {studentSearch.trim() !== '' && (
-  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-    {filteredStudents.length > 0 ? (
-      filteredStudents.map((student, index) => (
-        <div
-          key={index}
-          className="bg-[#f9fafb] rounded-xl p-3 text-sm border border-gray-100"
-        >
-         <div className="flex justify-between items-center">
-  <p className="font-semibold text-[#111827]">
-    {student.firstName}{' '}
-    {student.lastName}
-  </p>
-
-  <button
-    onClick={() =>
-      togglePortfolioFavorite(student)
-    }
-    className="text-xl"
-  >
-    {favorites.some(
-      (fav) =>
-        fav.email === student.email
-    )
-      ? '⭐'
-      : '☆'}
-  </button>
-</div>
-
-          <p className="text-gray-500">
-            {student.email}
-          </p>
-
-          {/* SKILLS */}
-          {student.skills && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {student.skills.map((skill, idx) => (
-                <span
-                  key={idx}
-                  className="bg-[#d1fae5] text-[#065f46] text-xs px-2 py-1 rounded-full font-medium"
-                >
-                  {skill}
-                </span>
-              ))}
+        {/* DISCOVER SECTION */}
+        <div className="mb-10 overflow-hidden rounded-3xl border border-slate-200 bg-white/80 shadow-lg backdrop-blur">
+          {/* Header row */}
+          <div className="flex flex-col gap-3 px-6 pt-6 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Explore</span>
+              <h2 className="mt-0.5 text-lg font-semibold text-slate-900">Discover</h2>
             </div>
-          )}
-        </div>
-      ))
-    ) : (
-      <p className="text-sm text-gray-400 px-2">
-        No students found
-      </p>
-    )}
-  </div>
-)}
-          </div>
-        </div>
-
-        {/* DASHBOARD */}
-        <main>
-          {user.role === 'student' && <StudentDashboard />}
-          {user.role === 'instructor' && (
-            <InstructorDashboard />
-          )}
-          {user.role === 'employer' && (
-            <EmployerDashboard />
-          )}
-        </main>
-
-        {/* SETTINGS */}
-        <div className="mt-16">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="text-gray-400 text-sm font-semibold hover:text-[#059669] transition-all duration-200"
-          >
-            Notification Settings
-          </button>
-
-          {showSettings && (
-            <div className="mt-6 bg-white border border-gray-100 rounded-3xl shadow-xl p-8">
-              <h3 className="text-2xl font-bold text-[#111827] mb-6">
-                Notification Preferences
-              </h3>
-
-              <div className="space-y-6">
-                {[
-                  {
-                    key: 'allNotifications',
-                    label: 'Turn All Notifications',
-                  },
-                  {
-                    key: 'cookies',
-                    label: 'Save Cookies',
-                  },
-                  {
-                    key: 'emailNotifications',
-                    label: 'Email Notifications',
-                  },
-                  {
-                    key: 'pushNotifications',
-                    label: 'Push Notifications',
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.key}
-                    className="flex items-center justify-between bg-[#f9fafb] p-5 rounded-2xl"
+            <div className="flex items-center gap-2">
+              {discoverTab === 'projects' && (
+                <div className="relative">
+                  <button
+                    onClick={() => setShowProjectFilter(prev => !prev)}
+                    className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition ${showProjectFilter ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
                   >
-                    <span className="font-semibold text-gray-700">
-                      {item.label}
-                    </span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    </svg>
+                    Filter
+                    {(projectDateSearch !== '' || projectRatingFilter > 0) && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    )}
+                  </button>
+                  {showProjectFilter && (
+                    <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+                      <div className="flex items-center justify-between bg-emerald-600 px-5 py-3 text-white">
+                        <h3 className="text-sm font-semibold">Filter Projects</h3>
+                        <button onClick={() => setShowProjectFilter(false)} className="text-white/70 transition hover:text-white">✕</button>
+                      </div>
+                      <div className="space-y-4 p-5">
+                        <div>
+                          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Date</label>
+                          <input
+                            type="date"
+                            value={projectDateSearch}
+                            onChange={(e) => setProjectDateSearch(e.target.value)}
+                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-500 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Min Rating</label>
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                type="button"
+                                onMouseEnter={() => setHoveredRating(star)}
+                                onMouseLeave={() => setHoveredRating(0)}
+                                onClick={() => setProjectRatingFilter(projectRatingFilter === star ? 0 : star)}
+                                className="transition hover:scale-110"
+                              >
+                                <svg viewBox="0 0 24 24" className={`h-7 w-7 transition ${star <= (hoveredRating || projectRatingFilter) ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-300'}`}>
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {(projectDateSearch !== '' || projectRatingFilter > 0) && (
+                          <button
+                            onClick={() => { setProjectDateSearch(''); setProjectRatingFilter(0); }}
+                            className="w-full rounded-full border border-red-200 bg-red-50 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+                          >
+                            Clear filters
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <input
+                type="text"
+                value={discoverTab === 'projects' ? projectSearch : discoverTab === 'instructors' ? instructorSearch : studentSearch}
+                onChange={(e) => {
+                  if (discoverTab === 'projects') setProjectSearch(e.target.value);
+                  else if (discoverTab === 'instructors') setInstructorSearch(e.target.value);
+                  else setStudentSearch(e.target.value);
+                }}
+                placeholder={`Search ${discoverTab}...`}
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30 sm:w-64"
+              />
+            </div>
+          </div>
 
-                    <button
-                      onClick={() =>
-                        toggleSetting(item.key)
-                      }
-                      className={`w-14 h-7 rounded-full transition-all relative ${
-                        settings[item.key]
-                          ? 'bg-[#059669]'
-                          : 'bg-gray-300'
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-all ${
-                          settings[item.key]
-                            ? 'left-8'
-                            : 'left-1'
-                        }`}
-                      ></div>
-                    </button>
+          {/* Tab bar */}
+          <div className="flex gap-2 px-6 pb-4">
+            {['projects', 'instructors', 'students'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setDiscoverTab(tab)}
+                className={`rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${discoverTab === tab ? 'bg-emerald-600 text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div className="border-t border-slate-100 px-6 py-5">
+            {/* PROJECTS TAB */}
+            {discoverTab === 'projects' && (
+              <>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {filteredProjects.slice(0, 6).map((p) => (
+                    <div key={p.id} onClick={() => navigate(`/project/${p.id}`)} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-4 text-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md">
+                      <p className="truncate font-semibold text-slate-900">{p.title}</p>
+                      <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{p.course}</span>
+                      <div className="mt-2 flex items-center gap-0.5">
+                        {[1,2,3,4,5].map(s => (
+                          <svg key={s} viewBox="0 0 24 24" className={`h-3 w-3 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400">{p.createdAt}</p>
+                      <div className="mt-3 flex gap-2">
+                        <button onClick={(e) => { e.stopPropagation(); navigate(`/project/${p.id}`); }} className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500">View</button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); const alreadyFav = favorites.some(f => f.id === p.id); const updated = alreadyFav ? favorites.filter(f => f.id !== p.id) : [...favorites, p]; setFavorites(updated); localStorage.setItem(`favorites_${user.email}`, JSON.stringify(updated)); }}
+                          className={`rounded-full px-3 py-1 text-xs font-semibold transition ${favorites.some(f => f.id === p.id) ? 'bg-red-50 text-red-500' : 'bg-amber-50 text-amber-600'}`}
+                        >
+                          {favorites.some(f => f.id === p.id) ? '★ Saved' : '☆ Save'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredProjects.length === 0 && <p className="text-sm italic text-slate-400">No projects found.</p>}
+                </div>
+              </>
+            )}
+
+            {/* INSTRUCTORS TAB */}
+            {discoverTab === 'instructors' && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredInstructors.slice(0, 6).map((i) => (
+                  <div key={i.userId} className="rounded-2xl border border-slate-100 bg-white p-4 text-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+                        {i.firstName[0]}{i.lastName[0]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{i.firstName} {i.lastName}</p>
+                        <p className="truncate text-xs text-slate-400">{i.email}</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">{i.subject}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${i.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{i.status}</span>
+                    </div>
                   </div>
                 ))}
+                {filteredInstructors.length === 0 && <p className="text-sm italic text-slate-400">No instructors found.</p>}
               </div>
-            </div>
-          )}
+            )}
+
+            {/* STUDENTS TAB */}
+            {discoverTab === 'students' && (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredStudents.slice(0, 6).map((s, idx) => (
+                  <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 text-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-sm font-semibold text-amber-700">
+                          {s.firstName[0]}{s.lastName[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate font-semibold text-slate-900">{s.firstName} {s.lastName}</p>
+                          <p className="truncate text-xs text-slate-400">{s.email}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => togglePortfolioFavorite(s)} className="shrink-0 text-lg">
+                        {favorites.some(f => f.email === s.email) ? '⭐' : '☆'}
+                      </button>
+                    </div>
+                    {s.skills && (
+                      <div className="mt-3 flex flex-wrap gap-1">
+                        {s.skills.map((skill, i) => (
+                          <span key={i} className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{skill}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {filteredStudents.length === 0 && <p className="text-sm italic text-slate-400">No students found.</p>}
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* ROLE DASHBOARD */}
+        <main>
+          {user.role === 'student' && <StudentDashboard />}
+          {user.role === 'instructor' && <InstructorDashboard />}
+          {user.role === 'employer' && <EmployerDashboard />}
+        </main>
+
       </div>
     </div>
   );
