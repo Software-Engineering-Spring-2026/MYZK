@@ -1,12 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+function Eye({ closed, dx = 0, dy = 0, size = 14 }) {
+  const len = Math.hypot(dx, dy) || 1;
+  const max = size * 0.18;
+  const x = (dx / len) * Math.min(max, len);
+  const y = (dy / len) * Math.min(max, len);
+
+  return (
+    <div
+      className="relative rounded-full border border-neutral-300 bg-white"
+      style={{ width: size, height: size }}
+    >
+      {closed ? (
+        <span className="absolute left-1/2 top-1/2 h-[2px] w-[80%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-neutral-700"></span>
+      ) : (
+        <span
+          className="absolute left-1/2 top-1/2 h-[45%] w-[45%] rounded-full bg-neutral-900 transition-transform duration-75"
+          style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
+        ></span>
+      )}
+    </div>
+  );
+}
+
 function Login() {
   const navigate = useNavigate();
   const studentFaceRef = useRef(null);
-  const employerFaceRef = useRef(null);
   const [studentPupilOffset, setStudentPupilOffset] = useState({ x: 0, y: 0 });
-  const [employerPupilOffset, setEmployerPupilOffset] = useState({ x: 0, y: 0 });
   const [eyesClosed, setEyesClosed] = useState(false);
 
   const handleLogin = (e) => {
@@ -66,19 +87,11 @@ function Login() {
       };
 
       updateOffset(studentFaceRef, setStudentPupilOffset);
-      updateOffset(employerFaceRef, setEmployerPupilOffset);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, [eyesClosed]);
-
-  const studentPupilStyle = {
-    transform: `translate(calc(-50% + ${studentPupilOffset.x}px), calc(-50% + ${studentPupilOffset.y}px))`,
-  };
-  const employerPupilStyle = {
-    transform: `translate(calc(-50% + ${employerPupilOffset.x}px), calc(-50% + ${employerPupilOffset.y}px))`,
-  };
 
   const handleFocus = () => setEyesClosed(true);
   const handleBlur = () => setEyesClosed(false);
@@ -114,47 +127,30 @@ function Login() {
               <div className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
                 <div
                   ref={studentFaceRef}
-                  className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-orange-200 to-rose-200 shadow-xl"
+                  className="relative mx-auto h-40 w-32 select-none"
                   aria-hidden="true"
                 >
-                  <div className="absolute -top-8 left-1/2 -translate-x-1/2">
-                    <div className="relative h-9 w-24">
-                      <div className="absolute left-1/2 top-0 h-8 w-12 -translate-x-1/2 rotate-45 rounded-[8px] bg-slate-900 shadow-md"></div>
-                      <div className="absolute left-1/2 top-5 h-2 w-24 -translate-x-1/2 rounded-full bg-slate-900/95"></div>
-                      <div className="absolute right-1 top-3 h-7 w-[2px] bg-slate-900/70"></div>
-                      <div className="absolute right-0 top-10 h-2 w-2 rounded-full bg-emerald-300"></div>
+                  <div className="absolute bottom-0 left-1/2 h-16 w-28 -translate-x-1/2 rounded-t-2xl bg-neutral-900"></div>
+                  <div
+                    className="absolute bottom-12 left-1/2 h-4 w-10 -translate-x-1/2 bg-neutral-100"
+                    style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 30% 100%)" }}
+                  ></div>
+                  <div className="absolute bottom-[34px] left-[38%] h-14 w-2 -translate-x-1/2 rounded-b-md bg-amber-400"></div>
+                  <div className="absolute bottom-[34px] left-[62%] h-14 w-2 -translate-x-1/2 rounded-b-md bg-amber-400"></div>
+                  <div className="absolute bottom-16 left-1/2 h-3 w-6 -translate-x-1/2 rounded-sm bg-amber-200"></div>
+                  <div className="absolute bottom-[72px] left-1/2 h-20 w-20 -translate-x-1/2 rounded-full border border-amber-300 bg-amber-200">
+                    <div className="absolute left-1/2 top-[42%] flex -translate-x-1/2 items-center justify-center gap-3">
+                      <Eye closed={eyesClosed} dx={studentPupilOffset.x} dy={studentPupilOffset.y} />
+                      <Eye closed={eyesClosed} dx={studentPupilOffset.x} dy={studentPupilOffset.y} />
                     </div>
+                    <div className="absolute bottom-3 left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-full bg-neutral-700"></div>
                   </div>
-                  <div className="absolute top-12 left-1/2 flex -translate-x-1/2 gap-4">
-                    <div className="relative h-5 w-10 rounded-full bg-white shadow-inner">
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-slate-900 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-0" : "opacity-100"
-                        }`}
-                        style={studentPupilStyle}
-                      ></span>
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-1 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-100" : "opacity-0"
-                        }`}
-                      ></span>
-                    </div>
-                    <div className="relative h-5 w-10 rounded-full bg-white shadow-inner">
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-slate-900 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-0" : "opacity-100"
-                        }`}
-                        style={studentPupilStyle}
-                      ></span>
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-1 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-100" : "opacity-0"
-                        }`}
-                      ></span>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-10 left-1/2 h-3 w-12 -translate-x-1/2 rounded-full border-b-2 border-slate-900/50"></div>
-                  <div className="absolute bottom-4 left-1/2 h-5 w-16 -translate-x-1/2 rounded-full bg-white/70"></div>
+                  <div className="absolute bottom-[132px] left-1/2 h-4 w-16 -translate-x-1/2 rounded-t-md bg-neutral-900"></div>
+                  <div className="absolute bottom-[142px] left-1/2 h-3 w-28 -translate-x-1/2 rotate-[-4deg] rounded-sm bg-neutral-900 shadow-md"></div>
+                  <div className="absolute bottom-[144px] left-1/2 h-[2px] w-28 -translate-x-1/2 rotate-[-4deg] bg-neutral-700"></div>
+                  <div className="absolute bottom-[146px] left-1/2 h-2 w-2 -translate-x-1/2 rounded-full bg-amber-500"></div>
+                  <div className="absolute bottom-[128px] right-[8%] h-6 w-[2px] rotate-[6deg] bg-amber-500"></div>
+                  <div className="absolute bottom-[122px] right-[6%] h-3 w-2.5 rounded-b-full bg-amber-500"></div>
                 </div>
                 <div className="mt-3 text-center">
                   <p className="text-sm font-semibold text-slate-900">Student</p>
@@ -164,56 +160,47 @@ function Login() {
 
               <div className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
                 <div
-                  ref={employerFaceRef}
-                  className="relative mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-gradient-to-br from-amber-200 via-orange-200 to-rose-200 shadow-xl"
+                  className="relative mx-auto h-40 w-32 select-none"
                   aria-hidden="true"
                 >
-                  <div className="absolute -top-2 left-1/2 h-12 w-20 -translate-x-1/2 rounded-b-full bg-slate-700"></div>
-                  <div className="absolute top-11 left-1/2 flex -translate-x-1/2 gap-4">
-                    <div className="relative h-5 w-10 rounded-full bg-white shadow-inner">
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-slate-900 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-0" : "opacity-100"
-                        }`}
-                        style={employerPupilStyle}
-                      ></span>
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-1 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-100" : "opacity-0"
-                        }`}
-                      ></span>
+                  <div className="absolute bottom-0 left-1/2 h-16 w-28 -translate-x-1/2 rounded-t-2xl bg-[#1e3a8a]"></div>
+                  <div
+                    className="absolute bottom-12 left-1/2 h-4 w-10 -translate-x-1/2 bg-white"
+                    style={{ clipPath: "polygon(0 0, 100% 0, 70% 100%, 30% 100%)" }}
+                  ></div>
+                  <div className="absolute bottom-12 left-1/2 h-2 w-3 -translate-x-1/2 bg-red-800"></div>
+                  <div
+                    className="absolute bottom-2 left-1/2 h-10 w-3 -translate-x-1/2 bg-red-700"
+                    style={{ clipPath: "polygon(20% 0, 80% 0, 100% 100%, 0 100%)" }}
+                  ></div>
+                  <div className="absolute bottom-16 left-1/2 h-3 w-6 -translate-x-1/2 rounded-sm bg-amber-200"></div>
+                  <div className="absolute bottom-[72px] left-1/2 h-20 w-20 -translate-x-1/2 overflow-hidden rounded-full border border-amber-300 bg-amber-200">
+                    <svg
+                      viewBox="0 0 100 100"
+                      className="pointer-events-none absolute inset-0 h-full w-full"
+                      preserveAspectRatio="none"
+                    >
+                      <path d="M -5 -5 L 105 -5 L 105 38 C 92 30, 80 28, 70 26 C 58 24, 48 28, 40 33 C 33 37, 28 38, 22 35 C 16 32, 10 28, -5 30 Z" fill="#facc15" />
+                      <path d="M 32 28 C 50 30, 70 30, 86 24 C 78 36, 60 42, 42 40 C 36 39, 32 34, 32 28 Z" fill="#eab308" />
+                      <path d="M 38 30 C 55 32, 72 30, 84 26" stroke="#ca8a04" strokeWidth="0.8" fill="none" opacity="0.8" />
+                      <path d="M 30 14 L 34 28" stroke="#a16207" strokeWidth="0.6" />
+                    </svg>
+                    <div className="absolute left-1/2 top-[48%] flex -translate-x-1/2 items-center justify-center gap-3">
+                      <Eye closed={eyesClosed} dx={-10} dy={0} />
+                      <Eye closed={eyesClosed} dx={-10} dy={0} />
                     </div>
-                    <div className="relative h-5 w-10 rounded-full bg-white shadow-inner">
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-3 w-3 rounded-full bg-slate-900 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-0" : "opacity-100"
-                        }`}
-                        style={employerPupilStyle}
-                      ></span>
-                      <span
-                        className={`absolute left-1/2 top-1/2 h-1 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-900/70 transition-opacity duration-200 ${
-                          eyesClosed ? "opacity-100" : "opacity-0"
-                        }`}
-                      ></span>
-                    </div>
+                    <div className="absolute bottom-3 left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-neutral-700"></div>
                   </div>
-                  <div className="pointer-events-none absolute top-10 left-1/2 flex -translate-x-1/2 items-center gap-2">
-                    <div className="h-6 w-12 rounded-full border-2 border-slate-900 bg-slate-900 shadow-inner"></div>
-                    <div className="h-6 w-12 rounded-full border-2 border-slate-900 bg-slate-900 shadow-inner"></div>
-                    <div className="absolute left-1/2 top-1/2 h-1 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-slate-900"></div>
-                  </div>
-                  <div className="absolute bottom-10 left-1/2 h-3 w-12 -translate-x-1/2 rounded-full border-b-2 border-slate-700/60"></div>
-                  <div className="absolute bottom-4 left-1/2 h-5 w-16 -translate-x-1/2 rounded-full bg-white/80"></div>
                 </div>
                 <div className="mt-3 text-center">
                   <p className="text-sm font-semibold text-slate-900">Employer</p>
-                  <p className="text-xs text-slate-500">Sunglasses on</p>
+                  <p className="text-xs text-slate-500">Talent scout</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col justify-center gap-8">
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-sm text-slate-600">Email</label>
