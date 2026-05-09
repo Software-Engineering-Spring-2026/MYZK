@@ -295,8 +295,8 @@ function Landing() {
         </section>
       </main>
 
-      <footer className="relative z-10 border-t border-white/60 bg-white/70 px-4 py-6 text-center text-sm text-slate-500 sm:px-6 lg:px-8">
-        (c) 2026 ProjectFolio — GUC Software Engineering Project
+      <footer className="relative z-10 border-t border-slate-200/80 bg-[#efe7da]/90 px-4 py-6 text-center text-sm text-slate-600 shadow-[0_-1px_0_rgba(15,23,42,0.03)] sm:px-6 lg:px-8">
+        © 2026 ProjectFolio — GUC Software Engineering Project
       </footer>
     </div>
   );

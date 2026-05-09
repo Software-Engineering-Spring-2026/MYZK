@@ -259,6 +259,12 @@ const getUserName = (user) => {
 };
 
 const getStatus = (item) => item?.status ?? "pending";
+const getUserStatus = (user) => {
+  if (!user) return null;
+  if (user.role === "admin") return "accepted";
+  if (user.role === "student") return null;
+  return user.status ?? "pending";
+};
 const isActive = (item) => item?.active ?? true;
 const getRating = (project) => project?.rating ?? 0;
 const getCreatedAt = (project) => project?.createdAt ?? "Not recorded";
@@ -593,8 +599,9 @@ function AdminDashboard() {
         .toLowerCase()
         .includes(search);
       const matchesRole = roleFilter === "all" || user.role === roleFilter;
+      const status = getUserStatus(user);
       const matchesStatus =
-        userStatusFilter === "all" || getStatus(user) === userStatusFilter;
+        userStatusFilter === "all" || status === userStatusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [roleFilter, userSearch, userStatusFilter, users]);
@@ -1053,12 +1060,6 @@ function AdminDashboard() {
               </ActionButton>
               <ActionButton
                 variant="secondary"
-                onClick={() => updateUser(employer, { active: !isActive(employer) })}
-              >
-                {isActive(employer) ? "Deactivate" : "Activate"}
-              </ActionButton>
-              <ActionButton
-                variant="secondary"
                 onClick={() => setModal({ type: "document", data: employer })}
               >
                 View Document
@@ -1117,7 +1118,7 @@ function AdminDashboard() {
       </div>
 
       <div className="rounded-3xl border border-slate-200 bg-white/80 shadow-lg backdrop-blur">
-        <div className="hidden grid-cols-[1.2fr_1.3fr_0.7fr_0.7fr_1fr] gap-4 border-b border-slate-100 px-5 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 lg:grid">
+        <div className="hidden grid-cols-[1.2fr_1.3fr_0.7fr_0.7fr_1fr] gap-4 border-b border-slate-100 px-5 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 lg:grid">
           <span>Name</span>
           <span>Email</span>
           <span>Role</span>
@@ -1136,7 +1137,13 @@ function AdminDashboard() {
               </div>
               <p className="text-sm text-slate-600">{user.email || "No email"}</p>
               <Pill className={roleClass(user.role)}>{user.role || "user"}</Pill>
-              <Pill className={statusClass(getStatus(user))}>{getStatus(user)}</Pill>
+              {getUserStatus(user) ? (
+                <Pill className={statusClass(getUserStatus(user))}>
+                  {getUserStatus(user)}
+                </Pill>
+              ) : (
+                <span className="text-xs text-slate-400">—</span>
+              )}
               <div className="flex flex-wrap gap-2">
                 <ActionButton
                   variant="secondary"
@@ -1659,7 +1666,9 @@ function AdminDashboard() {
                 <Field label="Company" value={modal.data.companyName || getUserName(modal.data)} />
                 <Field label="Email" value={modal.data.email} />
                 <Field label="Document" value={modal.data.taxDocument || "No document"} />
-                <Field label="Status" value={getStatus(modal.data)} />
+                {getUserStatus(modal.data) && (
+                  <Field label="Status" value={getUserStatus(modal.data)} />
+                )}
               </div>
             </>
           )}
