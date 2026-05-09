@@ -27,13 +27,15 @@ const Home = () => {
 
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem('notifications');
-    return saved ? JSON.parse(saved) : [
-      { id: 1, text: 'Instructor Ali commented on your B+ Tree project', read: false },
-      { id: 2, text: 'New internship posted: Backend Intern at Telda', read: false },
-      { id: 3, text: 'Your portfolio was viewed by 5 employers today', read: true },
-      { id: 4, text: 'You got a new private message', read: false },
-      { id: 5, text: 'Your teammate uploaded a new thesis draft', read: false },
-      { id: 6, text: 'Employer viewed your student portfolio', read: true },
+    const currentEmail = JSON.parse(localStorage.getItem('user'))?.email || '';
+    if (saved) return JSON.parse(saved);
+    return [
+      { id: 1, text: 'Instructor Ali commented on your B+ Tree project', read: false, userId: currentEmail },
+      { id: 2, text: 'New internship posted: Backend Intern at Telda', read: false, userId: currentEmail },
+      { id: 3, text: 'Your portfolio was viewed by 5 employers today', read: true, userId: currentEmail },
+      { id: 4, text: 'You got a new private message', read: false, userId: currentEmail },
+      { id: 5, text: 'Your teammate uploaded a new thesis draft', read: false, userId: currentEmail },
+      { id: 6, text: 'Employer viewed your student portfolio', read: true, userId: currentEmail },
     ];
   });
 
@@ -138,8 +140,9 @@ const Home = () => {
   );
 
   // ---------------- HELPERS ----------------
+  const myNotifications = notifications.filter(n => !n.userId || n.userId === user?.email);
   const toggleRead = (id) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: !n.read } : n));
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = myNotifications.filter((n) => !n.read).length;
 
   const sendMessage = () => {
     if (!chatInput.trim()) return;
@@ -176,9 +179,8 @@ const Home = () => {
             placeholder="Search by title or company name..."
             className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
           />
-          <div className="relative">
+          <div className="relative" onMouseEnter={() => setShowInternshipSort(true)} onMouseLeave={() => setShowInternshipSort(false)}>
             <button
-              onClick={() => setShowInternshipSort(prev => !prev)}
               className={`flex min-w-[160px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${showInternshipSort ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
@@ -190,6 +192,8 @@ const Home = () => {
               </svg>
             </button>
             {showInternshipSort && (
+              <>
+              <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
               <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
                 {[
                   { value: 'newest', label: 'Newest First' },
@@ -205,6 +209,7 @@ const Home = () => {
                   </button>
                 ))}
               </div>
+              </>
             )}
           </div>
         </div>
@@ -436,8 +441,8 @@ const Home = () => {
             </button>
 
             {/* NOTIFICATIONS */}
+            <div className="relative" onMouseEnter={() => setShowNotifications(true)} onMouseLeave={() => setShowNotifications(false)}>
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
               className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 shadow-sm transition hover:bg-white"
             >
               🔔
@@ -448,17 +453,21 @@ const Home = () => {
 
             {/* NOTIFICATION DROPDOWN */}
             {showNotifications && (
-              <div className="absolute right-16 top-full z-50 mt-2 w-96 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+              <>
+              <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
+              <div className="absolute right-0 top-full z-50 mt-2 w-96 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between bg-emerald-600 px-5 py-4 text-white">
                   <h3 className="font-semibold">Notifications</h3>
                   <span className="rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold">{unreadCount} New</span>
                 </div>
                 <div className="max-h-96 overflow-y-auto divide-y divide-slate-100">
-                  {notifications.map((n) => (
+                  {myNotifications.length === 0 ? (
+                    <p className="p-5 text-center text-sm italic text-slate-400">No notifications yet.</p>
+                  ) : myNotifications.map((n) => (
                     <div key={n.id} className="flex gap-3 p-4 transition hover:bg-slate-50">
                       <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${n.read ? 'bg-slate-200' : 'bg-emerald-500'}`} />
                       <div className="flex-1">
-                        <p className={`text-sm ${n.read ? 'text-slate-400' : 'font-medium text-slate-700'}`}>{n.text}</p>
+                        <p className={`text-sm ${n.read ? 'text-slate-400' : 'font-medium text-slate-700'}`}>{n.text || n.message}</p>
                         <button onClick={() => toggleRead(n.id)} className="mt-1 text-xs font-semibold text-emerald-600 hover:underline">
                           {n.read ? 'Mark as unread' : 'Mark as read'}
                         </button>
@@ -467,11 +476,13 @@ const Home = () => {
                   ))}
                 </div>
               </div>
+              </>
             )}
+            </div>
 
             {/* SETTINGS */}
+            <div className="relative" onMouseEnter={() => setShowSettings(true)} onMouseLeave={() => setShowSettings(false)}>
             <button
-              onClick={() => setShowSettings(!showSettings)}
               className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white/80 shadow-sm transition hover:bg-white"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-5 w-5 text-slate-500">
@@ -482,10 +493,11 @@ const Home = () => {
 
             {/* SETTINGS DROPDOWN */}
             {showSettings && (
+              <>
+              <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
               <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
                 <div className="flex items-center justify-between bg-slate-800 px-5 py-4 text-white">
                   <h3 className="font-semibold">Notification Preferences</h3>
-                  <button onClick={() => setShowSettings(false)} className="text-white/70 hover:text-white transition">✕</button>
                 </div>
                 <div className="divide-y divide-slate-100 p-2">
                   {[
@@ -506,7 +518,9 @@ const Home = () => {
                   ))}
                 </div>
               </div>
+              </>
             )}
+            </div>
 
             {/* SIGN OUT */}
             <button
@@ -528,9 +542,8 @@ const Home = () => {
             </div>
             <div className="flex items-center gap-2">
               {discoverTab === 'projects' && (
-                <div className="relative">
+                <div className="relative" onMouseEnter={() => setShowProjectFilter(true)} onMouseLeave={() => setShowProjectFilter(false)}>
                   <button
-                    onClick={() => setShowProjectFilter(prev => !prev)}
                     className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition ${showProjectFilter ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
@@ -542,6 +555,8 @@ const Home = () => {
                     )}
                   </button>
                   {showProjectFilter && (
+                    <>
+                    <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
                     <div className="absolute left-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
                       <div className="flex items-center justify-between bg-emerald-600 px-5 py-3 text-white">
                         <h3 className="text-sm font-semibold">Filter Projects</h3>
@@ -586,6 +601,7 @@ const Home = () => {
                         )}
                       </div>
                     </div>
+                    </>
                   )}
                 </div>
               )}
@@ -654,7 +670,7 @@ const Home = () => {
             {discoverTab === 'instructors' && (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredInstructors.slice(0, 6).map((i) => (
-                  <div key={i.userId} className="rounded-2xl border border-slate-100 bg-white p-4 text-sm transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div key={i.userId} onClick={() => navigate(`/instructor/${encodeURIComponent(i.email)}`)} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-4 text-sm transition hover:-translate-y-0.5 hover:shadow-md">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
                         {i.firstName[0]}{i.lastName[0]}

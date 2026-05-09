@@ -1,477 +1,541 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+const COURSES = [
+  'Bachelor Project','Software Engineering','Operating Systems','Machine Learning',
+  'Embedded Systems','Database Systems','Computer Networks','Artificial Intelligence',
+  'Mobile Development','Cyber Security','Data Structures','Algorithms',
+];
 
 const Profile = () => {
   const navigate = useNavigate();
 
   // ---------------- AUTH ----------------
   const user = JSON.parse(localStorage.getItem('user'));
-
-  useEffect(() => {
-    if (!user) {
-      navigate('/login');
-    }
-  }, [user, navigate]);
-
+  useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;
 
-  // ---------------- MY PROJECTS ----------------
-  const storedProjects = JSON.parse(localStorage.getItem('projects')) || [];
-  const myProjects = storedProjects.filter(p => p.creatorId === user.id);
-
-  // ---------------- PROFILE IMAGE ----------------
+  // ---------------- SHARED ----------------
+  const [isEditing, setIsEditing] = useState(false);
   const [profileImage, setProfileImage] = useState(
     localStorage.getItem(`profileImage_${user.email}`) || ''
   );
-
   const fileInputRef = useRef(null);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
-
     const reader = new FileReader();
-
     reader.onloadend = () => {
       setProfileImage(reader.result);
-
-      localStorage.setItem(
-        `profileImage_${user.email}`,
-        reader.result
-      );
+      localStorage.setItem(`profileImage_${user.email}`, reader.result);
     };
-
     reader.readAsDataURL(file);
   };
 
-  // ---------------- STUDENT STATES ----------------
+  // ---------------- STUDENT STATE ----------------
+  const [major, setMajor] = useState(localStorage.getItem(`major_${user.email}`) || '');
+  const [linkedIn, setLinkedIn] = useState(localStorage.getItem(`linkedin_${user.email}`) || '');
+  const [skills, setSkills] = useState(
+    JSON.parse(localStorage.getItem(`skills_${user.email}`)) || []
+  );
+  const [skillInput, setSkillInput] = useState('');
   const [favorites, setFavorites] = useState(
-    JSON.parse(
-      localStorage.getItem(`favorites_${user.email}`)
-    ) || []
+    JSON.parse(localStorage.getItem(`favorites_${user.email}`)) || []
   );
-
- const [completedInternships, setCompletedInternships] =
-  useState(
-    JSON.parse(
-      localStorage.getItem(
-        `internships_${user.email}`
-      )
-    ) || [
-      'Frontend Intern @ Google',
-      'Backend Intern @ Microsoft',
-      'AI Intern @ OpenAI',
-    ]
+  const [completedInternships, setCompletedInternships] = useState(
+    JSON.parse(localStorage.getItem(`internships_${user.email}`)) || []
   );
+  const [newInternship, setNewInternship] = useState('');
 
-const [newInternship, setNewInternship] =
-  useState('');
+  // ---------------- INSTRUCTOR STATE ----------------
+  const [biography, setBiography] = useState(localStorage.getItem(`bio_${user.email}`) || '');
+  const [researchInterests, setResearchInterests] = useState(localStorage.getItem(`research_${user.email}`) || '');
+  const [education, setEducation] = useState(localStorage.getItem(`education_${user.email}`) || '');
+  const [courses, setCourses] = useState(() => {
+    const saved = JSON.parse(localStorage.getItem(`courses_${user.email}`));
+    if (saved) return saved.includes('Bachelor Project') ? saved : ['Bachelor Project', ...saved];
+    return ['Bachelor Project'];
+  });
+  const [courseInput, setCourseInput] = useState('');
 
-  const studentStats = {
-    totalProjects: 8,
-    languagesUsed: {
-      JavaScript: '40%',
-      Java: '25%',
-      Python: '20%',
-      C: '15%',
-    },
-    topCollaborators: {
-      'Sara Ahmed': 5,
-      'Omar Khaled': 3,
-      'Mariam Tarek': 2,
-    }
+  // ---------------- EMPLOYER STATE ----------------
+  const [companyBio, setCompanyBio] = useState(localStorage.getItem(`companyBio_${user.email}`) || '');
+  const [companyAddress, setCompanyAddress] = useState(localStorage.getItem(`companyAddress_${user.email}`) || '');
+  const [companyContact, setCompanyContact] = useState(localStorage.getItem(`companyContact_${user.email}`) || '');
+
+  // ---------------- MY PROJECTS ----------------
+  const [myProjects, setMyProjects] = useState(() => {
+    const all = JSON.parse(localStorage.getItem('projects')) || [];
+    return all.filter(p => p.creatorId === user.email);
+  });
+
+  const [showProjectEditModal, setShowProjectEditModal] = useState(false);
+  const [projectEditForm, setProjectEditForm] = useState(null);
+  const [projectEditLangInput, setProjectEditLangInput] = useState('');
+  const [projectEditTagInput, setProjectEditTagInput] = useState('');
+  const [projectDeleteTarget, setProjectDeleteTarget] = useState(null);
+
+  const saveProjectEdit = () => {
+    if (!projectEditForm?.title?.trim() || !projectEditForm?.description?.trim() || !projectEditForm?.course) return;
+    const all = JSON.parse(localStorage.getItem('projects')) || [];
+    const updated = all.map(p => p.id === projectEditForm.id ? { ...p, ...projectEditForm } : p);
+    localStorage.setItem('projects', JSON.stringify(updated));
+    setMyProjects(updated.filter(p => p.creatorId === user.email));
+    setShowProjectEditModal(false);
   };
 
-  // ---------------- INSTRUCTOR STATES ----------------
-  const [biography, setBiography] = useState(
-    localStorage.getItem(`bio_${user.email}`) || ''
+  const confirmDeleteProject = () => {
+    if (!projectDeleteTarget) return;
+    const all = JSON.parse(localStorage.getItem('projects')) || [];
+    const updated = all.filter(p => p.id !== projectDeleteTarget.id);
+    localStorage.setItem('projects', JSON.stringify(updated));
+    setMyProjects(updated.filter(p => p.creatorId === user.email));
+    setProjectDeleteTarget(null);
+  };
+
+  // ---------------- PROFILE COMPLETION ----------------
+  const studentComplete = !!(major && skills.length > 0 && linkedIn);
+  const instructorComplete = !!(biography && researchInterests && education);
+  const showBanner = !isEditing && (
+    (user.role === 'student' && !studentComplete) ||
+    (user.role === 'instructor' && !instructorComplete)
   );
 
-  const [researchInterests, setResearchInterests] =
-    useState(
-      localStorage.getItem(
-        `research_${user.email}`
-      ) || ''
-    );
+  // ---------------- SAVE ----------------
+  const handleSave = () => {
+    if (user.role === 'student') {
+      localStorage.setItem(`major_${user.email}`, major);
+      localStorage.setItem(`linkedin_${user.email}`, linkedIn);
+      localStorage.setItem(`skills_${user.email}`, JSON.stringify(skills));
+    } else if (user.role === 'instructor') {
+      localStorage.setItem(`bio_${user.email}`, biography);
+      localStorage.setItem(`research_${user.email}`, researchInterests);
+      localStorage.setItem(`education_${user.email}`, education);
+      localStorage.setItem(`courses_${user.email}`, JSON.stringify(courses));
+    } else {
+      localStorage.setItem(`companyBio_${user.email}`, companyBio);
+      localStorage.setItem(`companyAddress_${user.email}`, companyAddress);
+      localStorage.setItem(`companyContact_${user.email}`, companyContact);
+    }
+    setIsEditing(false);
+  };
 
-  const [education, setEducation] = useState(
-    localStorage.getItem(`education_${user.email}`) || ''
-  );
+  // ---------------- SKILL HELPERS ----------------
+  const addSkill = () => {
+    const s = skillInput.trim();
+    if (!s || skills.includes(s)) return;
+    setSkills(prev => [...prev, s]);
+    setSkillInput('');
+  };
+  const removeSkill = (s) => setSkills(prev => prev.filter(x => x !== s));
 
-  const [courses, setCourses] = useState(
-    JSON.parse(
-      localStorage.getItem(`courses_${user.email}`)
-    ) || ['Data Structures', 'Machine Learning']
-  );
+  // ---------------- COURSE HELPERS ----------------
+  const addCourse = () => {
+    const c = courseInput.trim();
+    if (!c || courses.includes(c)) return;
+    setCourses(prev => [...prev, c]);
+    setCourseInput('');
+  };
+  const removeCourse = (c) => {
+    if (c === 'Bachelor Project') return;
+    setCourses(prev => prev.filter(x => x !== c));
+  };
 
-  const [courseInput, setCourseInput] =
-    useState('');
+  // ---------------- EMPLOYER HELPERS ----------------
+  const openGoogleMaps = () => {
+    const query = encodeURIComponent(companyAddress);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank');
+  };
 
-  useEffect(() => {
-    localStorage.setItem(
-      `bio_${user.email}`,
-      biography
-    );
+  // ---------------- INTERNSHIP HELPERS ----------------
+  const addInternship = () => {
+    if (!newInternship.trim()) return;
+    const updated = [...completedInternships, newInternship.trim()];
+    setCompletedInternships(updated);
+    localStorage.setItem(`internships_${user.email}`, JSON.stringify(updated));
+    setNewInternship('');
+  };
+  const removeInternship = (i) => {
+    const updated = completedInternships.filter((_, idx) => idx !== i);
+    setCompletedInternships(updated);
+    localStorage.setItem(`internships_${user.email}`, JSON.stringify(updated));
+  };
 
-    localStorage.setItem(
-      `research_${user.email}`,
-      researchInterests
-    );
-
-    localStorage.setItem(
-      `education_${user.email}`,
-      education
-    );
-
-    localStorage.setItem(
-      `courses_${user.email}`,
-      JSON.stringify(courses)
-    );
-  }, [
-    biography,
-    researchInterests,
-    education,
-    courses,
-    user.email,
-  ]);
-
-  // ---------------- EMPLOYER STATES ----------------
-  const [companyBio, setCompanyBio] = useState(
-    localStorage.getItem(
-      `companyBio_${user.email}`
-    ) || ''
-  );
-
-  const [companyAddress, setCompanyAddress] =
-    useState(
-      localStorage.getItem(
-        `companyAddress_${user.email}`
-      ) || ''
-    );
-
-  const [companyContact, setCompanyContact] =
-    useState(
-      localStorage.getItem(
-        `companyContact_${user.email}`
-      ) || ''
-    );
-
-  useEffect(() => {
-    localStorage.setItem(
-      `companyBio_${user.email}`,
-      companyBio
-    );
-
-    localStorage.setItem(
-      `companyAddress_${user.email}`,
-      companyAddress
-    );
-
-    localStorage.setItem(
-      `companyContact_${user.email}`,
-      companyContact
-    );
-  }, [
-    companyBio,
-    companyAddress,
-    companyContact,
-    user.email,
-  ]);
-
-  // ---------------- HELPERS ----------------
-  // ---------------- HELPERS ----------------
-const addCourse = () => {
-  if (!courseInput.trim()) return;
-
-  setCourses((prev) => [...prev, courseInput]);
-
-  setCourseInput('');
-};
-
-const removeCourse = (course) => {
-  setCourses((prev) =>
-    prev.filter((c) => c !== course)
-  );
-};
-
-// ---------------- EMPLOYER SAVE FUNCTIONS ----------------
-const saveCompanyBio = () => {
-  localStorage.setItem(
-    `companyBio_${user.email}`,
-    companyBio
-  );
-
-  alert('Company biography saved successfully');
-};
-
-const saveCompanyAddress = () => {
-  localStorage.setItem(
-    `companyAddress_${user.email}`,
-    companyAddress
-  );
-
-  alert('Company address saved successfully');
-};
-
-const saveCompanyContact = () => {
-  localStorage.setItem(
-    `companyContact_${user.email}`,
-    companyContact
-  );
-
-  alert('Contact information saved successfully');
-};
-
-const openGoogleMaps = () => {
-  const query = encodeURIComponent(companyAddress);
-
-  window.open(
-    `https://www.google.com/maps/search/?api=1&query=${query}`,
-    '_blank'
-  );
-};
-
-// ---------------- INTERNSHIPS ----------------
-const addInternship = () => {
-  if (!newInternship.trim()) return;
-
-  const updatedInternships = [
-    ...completedInternships,
-    newInternship,
-  ];
-
-  setCompletedInternships(
-    updatedInternships
-  );
-
-  localStorage.setItem(
-    `internships_${user.email}`,
-    JSON.stringify(updatedInternships)
-  );
-
-  setNewInternship('');
-};
-
-// ---------------- INSTRUCTOR SAVE FUNCTIONS ----------------
-const saveBiography = () => {
-  localStorage.setItem(
-    `bio_${user.email}`,
-    biography
-  );
-
-  alert('Biography saved successfully');
-};
-
-const saveResearch = () => {
-  localStorage.setItem(
-    `research_${user.email}`,
-    researchInterests
-  );
-
-  alert(
-    'Research interests saved successfully'
-  );
-};
-
-const saveEducation = () => {
-  localStorage.setItem(
-    `education_${user.email}`,
-    education
-  );
-
-  alert(
-    'Education background saved successfully'
-  );
-};
-
-return (
+  // ---------------- RENDER ----------------
+  return (
     <div className="min-h-screen bg-[#f7f4ee] text-slate-900 antialiased">
-      {/* Background blobs */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-200/70 blur-3xl" />
         <div className="absolute right-[-6%] top-20 h-[360px] w-[360px] rounded-full bg-emerald-200/60 blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.18),transparent_55%),radial-gradient(circle_at_20%_70%,rgba(251,191,36,0.18),transparent_55%)]" />
       </div>
+
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-10">
+
         {/* TOP BAR */}
-        <div className="flex justify-between items-center mb-10">
+        <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-4xl font-extrabold text-[#111827]">
-              My Profile
-            </h1>
-
-            <p className="text-gray-500 mt-2 capitalize">
-              {user.role} Account
-            </p>
+            <h1 className="text-4xl font-extrabold text-slate-900">My Profile</h1>
+            <p className="mt-1 text-sm capitalize text-slate-500">{user.role} Account</p>
           </div>
-
           <button
             onClick={() => navigate('/home')}
-            className="bg-[#111827] hover:bg-black text-white px-6 py-3 rounded-xl font-semibold"
+            className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
           >
             Back
           </button>
         </div>
 
-        {/* PROFILE CARD */}
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8 mb-8">
-          <div className="flex flex-col md:flex-row gap-8 items-center">
-            {/* IMAGE */}
-            <div className="flex flex-col items-center">
-              <div className="w-40 h-40 rounded-full overflow-hidden border-4 border-[#d1fae5] shadow-md">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-[#ecfdf5] flex items-center justify-center text-6xl">
-                    👤
-                  </div>
-                )}
+        {/* COMPLETION BANNER */}
+        {showBanner && (
+          <div className="mb-8 flex items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-6 py-5 shadow-sm">
+            <div className="flex items-start gap-4">
+              <span className="mt-0.5 text-2xl">✨</span>
+              <div>
+                <p className="font-semibold text-amber-800">Complete your profile</p>
+                <p className="mt-0.5 text-sm text-amber-600">
+                  {user.role === 'student'
+                    ? 'Add your major, skills, and LinkedIn link so employers can find and evaluate you.'
+                    : 'Add your biography, research interests, and education background so students can learn about you.'}
+                </p>
               </div>
+            </div>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="shrink-0 rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-white shadow transition hover:bg-amber-400"
+            >
+              Complete Now
+            </button>
+          </div>
+        )}
 
-              <button
-                onClick={() =>
-                  fileInputRef.current.click()
+        {/* PROFILE CARD */}
+        <div className="mb-8 rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start">
+
+            {/* AVATAR */}
+            <div className="flex flex-col items-center gap-3">
+              <div className="h-36 w-36 overflow-hidden rounded-full border-4 border-emerald-100 shadow-md">
+                {profileImage
+                  ? <img src={profileImage} alt="Profile" className="h-full w-full object-cover" />
+                  : <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-5xl">👤</div>
                 }
-                className="mt-4 bg-[#059669] hover:bg-[#047857] text-white px-5 py-2 rounded-xl text-sm font-semibold"
+              </div>
+              <button
+                onClick={() => fileInputRef.current.click()}
+                className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
               >
-                Upload Picture
+                Upload Photo
               </button>
-
-              <input
-                type="file"
-                accept="image/*"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                className="hidden"
-              />
+              <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
             </div>
 
-            {/* USER INFO */}
-            <div className="flex-1">
-              <div className="flex items-center gap-4">
-  <h2 className="text-3xl font-bold text-[#111827]">
-    {user.firstName || user.companyName}
-  </h2>
+            {/* INFO AREA */}
+            <div className="flex-1 min-w-0">
 
-  <span className="bg-[#d1fae5] text-[#065f46] px-4 py-2 rounded-full text-sm font-semibold capitalize">
-    {user.role}
-  </span>
-</div>
+              {/* NAME + ROLE + EDIT BUTTON */}
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900">
+                    {user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : user.companyName}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-slate-500">{user.email}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold capitalize text-emerald-700">
+                    {user.role}
+                  </span>
+                  {!isEditing ? (
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      ✏️ Edit Profile
+                    </button>
+                  ) : user.role === 'employer' ? (
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                    >
+                      Done Editing
+                    </button>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSave}
+                        className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setIsEditing(false)}
+                        className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              <p className="text-gray-500 mt-2">
-  {user.email}
-</p>
+              {/* ── STUDENT VIEW ── */}
+              {user.role === 'student' && !isEditing && (
+                <div className="mt-5 space-y-3">
+                  {major ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">Major</span>
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">{major}</span>
+                    </div>
+                  ) : <p className="text-sm italic text-slate-400">No major set yet.</p>}
 
-{/* DISPLAY COMPANY BIO */}
-{user.role === 'employer' && companyBio && (
-  <p className="mt-4 text-gray-600 leading-relaxed max-w-2xl">
-    {companyBio}
-  </p>
-)}
-{/* DISPLAY COMPANY ADDRESS */}
-{user.role === 'employer' && companyAddress && (
-  <div className="mt-4 bg-[#ecfdf5] border border-[#d1fae5] rounded-2xl p-4 max-w-xl">
-    <p className="text-xs uppercase tracking-widest text-[#059669] font-bold mb-2">
-      Company Address
-    </p>
+                  {linkedIn ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">LinkedIn / CV</span>
+                      <a
+                        href={linkedIn.startsWith('http') ? linkedIn : `https://${linkedIn}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate max-w-xs text-sm font-medium text-emerald-600 transition hover:underline"
+                      >
+                        {linkedIn}
+                      </a>
+                    </div>
+                  ) : <p className="text-sm italic text-slate-400">No LinkedIn link yet.</p>}
 
-    <p className="text-[#065f46] font-medium">
-      {companyAddress}
-    </p>
-  </div>
-)}
+                  {skills.length > 0 ? (
+                    <div>
+                      <span className="mb-2 block text-xs font-semibold uppercase tracking-widest text-slate-400">Skills</span>
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map(s => (
+                          <span key={s} className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : <p className="text-sm italic text-slate-400">No skills added yet.</p>}
+                </div>
+              )}
 
-{/* DISPLAY INSTRUCTOR INFO */}
-{user.role === 'instructor' && (
-  <div className="mt-5 space-y-4 max-w-3xl">
-    {/* BIOGRAPHY */}
-    {biography && (
-      <div className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2">
-          Biography
-        </p>
+              {/* ── STUDENT EDIT ── */}
+              {user.role === 'student' && isEditing && (
+                <div className="mt-5 space-y-5">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Major</label>
+                    <div className="flex gap-2">
+                      <input
+                        value={major}
+                        onChange={e => setMajor(e.target.value)}
+                        placeholder="e.g. Computer Science"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      {major && (
+                        <button onClick={() => setMajor('')} className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-        <p className="text-gray-700 whitespace-pre-line">
-          {biography}
-        </p>
-      </div>
-    )}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">LinkedIn / CV Link</label>
+                    <div className="flex gap-2">
+                      <input
+                        value={linkedIn}
+                        onChange={e => setLinkedIn(e.target.value)}
+                        placeholder="https://linkedin.com/in/yourname"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      {linkedIn && (
+                        <button onClick={() => setLinkedIn('')} className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-    {/* RESEARCH */}
-    {researchInterests && (
-      <div className="bg-[#ecfdf5] border border-[#d1fae5] rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-widest text-[#059669] font-bold mb-2">
-          Research Interests
-        </p>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Skills</label>
+                    <div className="mb-2 flex gap-2">
+                      <input
+                        value={skillInput}
+                        onChange={e => setSkillInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
+                        placeholder="e.g. React, Python, SQL..."
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      <button onClick={addSkill} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
+                        Add
+                      </button>
+                    </div>
+                    {skills.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {skills.map(s => (
+                          <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                            {s}
+                            <button onClick={() => removeSkill(s)} className="text-emerald-400 transition hover:text-red-500">✕</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
-        <p className="text-[#065f46] whitespace-pre-line">
-          {researchInterests}
-        </p>
-      </div>
-    )}
+              {/* ── INSTRUCTOR VIEW ── */}
+              {user.role === 'instructor' && !isEditing && (
+                <div className="mt-5 space-y-3 max-w-3xl">
+                  {biography
+                    ? <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Biography</p>
+                        <p className="text-sm text-slate-700 whitespace-pre-line">{biography}</p>
+                      </div>
+                    : <p className="text-sm italic text-slate-400">No biography yet.</p>
+                  }
+                  {researchInterests
+                    ? <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-emerald-600">Research Interests</p>
+                        <p className="text-sm text-emerald-800 whitespace-pre-line">{researchInterests}</p>
+                      </div>
+                    : <p className="text-sm italic text-slate-400">No research interests yet.</p>
+                  }
+                  {education
+                    ? <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-amber-600">Education Background</p>
+                        <p className="text-sm text-amber-800 whitespace-pre-line">{education}</p>
+                      </div>
+                    : <p className="text-sm italic text-slate-400">No education background yet.</p>
+                  }
+                  {courses.length > 0 && (
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-blue-600">Courses Taught</p>
+                      <div className="flex flex-wrap gap-2">
+                        {courses.map(c => (
+                          <span key={c} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">{c}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-    {/* EDUCATION */}
-    {education && (
-      <div className="bg-[#fefce8] border border-[#fde68a] rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-widest text-[#ca8a04] font-bold mb-2">
-          Education Background
-        </p>
+              {/* ── INSTRUCTOR EDIT ── */}
+              {user.role === 'instructor' && isEditing && (
+                <div className="mt-5 space-y-5">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Biography</label>
+                    <div className="relative">
+                      <textarea
+                        value={biography}
+                        onChange={e => setBiography(e.target.value)}
+                        rows={4}
+                        placeholder="Write a short biography about yourself..."
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      {biography && (
+                        <button onClick={() => setBiography('')} className="absolute right-3 top-3 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-500 transition hover:bg-red-100">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-        <p className="text-[#854d0e] whitespace-pre-line">
-          {education}
-        </p>
-      </div>
-    )}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Research Interests</label>
+                    <div className="relative">
+                      <textarea
+                        value={researchInterests}
+                        onChange={e => setResearchInterests(e.target.value)}
+                        rows={4}
+                        placeholder="e.g. Machine Learning, NLP, Computer Vision..."
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      {researchInterests && (
+                        <button onClick={() => setResearchInterests('')} className="absolute right-3 top-3 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-500 transition hover:bg-red-100">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-    {/* COURSES */}
-    {courses.length > 0 && (
-      <div className="bg-[#eff6ff] border border-[#bfdbfe] rounded-2xl p-4">
-        <p className="text-xs uppercase tracking-widest text-[#2563eb] font-bold mb-3">
-          Courses Taught
-        </p>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Education Background</label>
+                    <div className="relative">
+                      <textarea
+                        value={education}
+                        onChange={e => setEducation(e.target.value)}
+                        rows={4}
+                        placeholder="e.g. PhD in Computer Science, MIT 2018..."
+                        className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      {education && (
+                        <button onClick={() => setEducation('')} className="absolute right-3 top-3 rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-500 transition hover:bg-red-100">
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
-        <div className="flex flex-wrap gap-2">
-          {courses.map((course, index) => (
-            <span
-              key={index}
-              className="bg-[#dbeafe] text-[#1d4ed8] px-3 py-1 rounded-full text-sm font-semibold"
-            >
-              {course}
-            </span>
-          ))}
-        </div>
-      </div>
-    )}
-  </div>
-)}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Courses Taught</label>
+                    <p className="mb-2 text-xs text-slate-400">Bachelor Project is always linked and cannot be removed.</p>
+                    <div className="mb-3 flex gap-2">
+                      <input
+                        value={courseInput}
+                        onChange={e => setCourseInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCourse(); } }}
+                        placeholder="e.g. Data Structures"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      <button onClick={addCourse} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
+                        Add
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {courses.map(c => (
+                        <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                          {c}
+                          {c !== 'Bachelor Project'
+                            ? <button onClick={() => removeCourse(c)} className="text-blue-400 transition hover:text-red-500">✕</button>
+                            : <span className="text-blue-400 text-xs">🔒</span>
+                          }
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-{/* DISPLAY CONTACT INFO */}
-{user.role === 'employer' && companyContact && (
-  <div className="mt-4 bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 max-w-xl">
-    <p className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2">
-      Contact Information
-    </p>
-
-    <p className="text-gray-700 whitespace-pre-line">
-      {companyContact}
-    </p>
-  </div>
-)}
+              {/* ── EMPLOYER VIEW ── */}
+              {user.role === 'employer' && !isEditing && (
+                <div className="mt-5 space-y-3">
+                  {companyBio
+                    ? <p className="text-sm leading-relaxed text-slate-600">{companyBio}</p>
+                    : <p className="text-sm italic text-slate-400">No company biography yet.</p>
+                  }
+                  {companyAddress && (
+                    <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-emerald-600">Address</p>
+                      <p className="text-sm text-emerald-800">{companyAddress}</p>
+                    </div>
+                  )}
+                  {companyContact && (
+                    <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Contact</p>
+                      <p className="text-sm text-slate-700 whitespace-pre-line">{companyContact}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
 
             </div>
           </div>
         </div>
 
-        {/* STUDENT PROFILE */}
+        {/* ══ STUDENT SECTIONS ══ */}
         {user.role === 'student' && (
           <div className="space-y-8">
+
             {/* MY PROJECTS */}
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
               <div className="mb-6 flex items-center justify-between">
@@ -487,31 +551,117 @@ return (
                 </button>
               </div>
               {myProjects.length > 0 ? (
-                <div className="flex gap-4 overflow-x-auto pb-2">
-                  {myProjects.map((p) => (
-                    <div key={p.id} className="w-56 shrink-0 rounded-2xl border border-slate-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
-                      <p className="truncate font-semibold text-slate-900 text-sm">{p.title}</p>
-                      <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{p.course}</span>
-                      <div className="mt-2 flex items-center gap-0.5">
-                        {[1,2,3,4,5].map(s => (
-                          <svg key={s} viewBox="0 0 24 24" className={`h-3 w-3 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                          </svg>
-                        ))}
+                <div className="space-y-4">
+                  {myProjects.map(p => (
+                    <div key={p.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:shadow-md">
+                      {/* Title row */}
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">{p.course}</span>
+                            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${p.isPublic ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
+                              {p.isPublic ? 'Public' : 'Private'}
+                            </span>
+                            {p.createdAt && <span className="text-xs text-slate-400">{p.createdAt}</span>}
+                          </div>
+                          <h4 className="text-base font-bold text-slate-900">{p.title}</h4>
+                          {p.description && <p className="mt-1 text-sm text-slate-500 line-clamp-2">{p.description}</p>}
+                        </div>
+                        {/* Rating stars */}
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          {[1,2,3,4,5].map(s => (
+                            <svg key={s} viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                            </svg>
+                          ))}
+                          {p.rating && <span className="ml-1 text-xs text-slate-400">{p.rating}/5</span>}
+                        </div>
                       </div>
-                      <button onClick={() => navigate(`/project/${p.id}`)} className="mt-3 w-full rounded-full bg-emerald-600 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500">
-                        View
-                      </button>
+
+                      {/* Languages */}
+                      {p.languages?.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {p.languages.map(l => (
+                            <span key={l} className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{l}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tags */}
+                      {p.tags?.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {p.tags.map(t => (
+                            <span key={t} className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">{t}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Links */}
+                      {(p.githubLink || p.demoVideo) && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {p.githubLink && (
+                            <a href={p.githubLink} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100">
+                              <svg viewBox="0 0 24 24" fill="currentColor" className="h-3.5 w-3.5">
+                                <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                              </svg>
+                              GitHub
+                            </a>
+                          )}
+                          {p.demoVideo && (
+                            <a href={p.demoVideo} target="_blank" rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                              </svg>
+                              Demo Video
+                            </a>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Action buttons */}
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          onClick={() => navigate(`/project/${p.id}`)}
+                          className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProjectEditForm({
+                              id: p.id,
+                              title: p.title,
+                              description: p.description || '',
+                              course: p.course,
+                              githubLink: p.githubLink || '',
+                              demoVideo: p.demoVideo || '',
+                              languages: [...(p.languages || [])],
+                              tags: [...(p.tags || [])],
+                            });
+                            setProjectEditLangInput('');
+                            setProjectEditTagInput('');
+                            setShowProjectEditModal(true);
+                          }}
+                          className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => setProjectDeleteTarget(p)}
+                          className="rounded-full bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
                   <p className="text-sm text-slate-400">No projects yet.</p>
-                  <button
-                    onClick={() => navigate('/create')}
-                    className="mt-3 rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
-                  >
+                  <button onClick={() => navigate('/create')} className="mt-3 rounded-full bg-emerald-600 px-5 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500">
                     + Create your first project
                   </button>
                 </div>
@@ -519,424 +669,177 @@ return (
             </div>
 
             {/* FAVORITES */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold text-[#111827] mb-5">
-                Favorite Projects & Portfolios
-              </h3>
-
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+              <h3 className="mb-5 text-xl font-bold text-slate-900">Favorite Projects & Portfolios</h3>
               {favorites.length > 0 ? (
                 <div className="space-y-3">
-                  {favorites.map((fav, index) => (
-                    <div
-                      key={index}
-                      className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 flex justify-between items-center"
-                    >
-                    <div>
-  {fav.type === 'portfolio' ? (
-    <>
-      <p className="font-semibold text-[#111827]">
-        {fav.firstName} {fav.lastName}
-      </p>
-
-      <p className="text-gray-500 text-sm mt-1">
-        Student Portfolio
-      </p>
-    </>
-  ) : (
-    <>
-      <p className="font-semibold text-[#111827]">
-        {fav.title}
-      </p>
-
-      <p className="text-gray-500 text-sm mt-1">
-        {fav.course}
-      </p>
-    </>
-  )}
-</div>
-              <button
-  onClick={() => {
-    const updatedFavorites =
-      favorites.filter(
-        (_, i) => i !== index
-      );
-
-    setFavorites(updatedFavorites);
-
-    localStorage.setItem(
-      `favorites_${user.email}`,
-      JSON.stringify(updatedFavorites)
-    );
-  }}
-  className="text-red-500 text-sm font-semibold"
->
-  Remove
-</button>
+                  {favorites.map((fav, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                      <div>
+                        {fav.type === 'portfolio' ? (
+                          <>
+                            <p className="font-semibold text-slate-900">{fav.firstName} {fav.lastName}</p>
+                            <p className="text-sm text-slate-400">Student Portfolio</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-slate-900">{fav.title}</p>
+                            <p className="text-sm text-slate-400">{fav.course}</p>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = favorites.filter((_, idx) => idx !== i);
+                          setFavorites(updated);
+                          localStorage.setItem(`favorites_${user.email}`, JSON.stringify(updated));
+                        }}
+                        className="rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+                      >
+                        Remove
+                      </button>
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-gray-400">
-                  No favorites added yet.
-                </p>
-              )}
+              ) : <p className="text-sm italic text-slate-400">No favorites added yet.</p>}
             </div>
 
-            {/* STATS */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold text-[#111827] mb-6">
-                Portfolio Statistics
-              </h3>
-
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="bg-[#f9fafb] rounded-2xl p-5">
-                  <p className="text-gray-400 text-sm">
-                    Total Projects
-                  </p>
-
-                  <h4 className="text-4xl font-bold text-[#059669] mt-2">
-                    {
-                      studentStats.totalProjects
-                    }
-                  </h4>
+            {/* PORTFOLIO STATS */}
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+              <h3 className="mb-6 text-xl font-bold text-slate-900">Portfolio Statistics</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Total Projects</p>
+                  <p className="mt-2 text-4xl font-bold text-emerald-600">{myProjects.length}</p>
                 </div>
-
-                <div className="bg-[#f9fafb] rounded-2xl p-5">
-                  <p className="text-gray-400 text-sm mb-3">
-                    Languages Used
-                  </p>
-
-                  <div className="space-y-2">
-                    {Object.entries(
-                      studentStats.languagesUsed
-                    ).map(([lang, value]) => (
-                      <div
-                        key={lang}
-                        className="flex justify-between"
-                      >
-                        <span>{lang}</span>
-
-                        <span className="font-semibold text-[#059669]">
-                          {value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Skills Count</p>
+                  <p className="text-4xl font-bold text-emerald-600">{skills.length}</p>
+                  <p className="mt-1 text-xs text-slate-400">skills on profile</p>
                 </div>
-              </div>
-
-              {/* COLLABORATORS */}
-              <div className="mt-8">
-                <h4 className="font-bold text-lg mb-4">
-                  Top Collaborators
-                </h4>
-
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(
-  studentStats.topCollaborators
-).map(([name, count], index) => (
-  <span
-    key={index}
-    className="bg-[#ecfdf5] text-[#065f46] px-4 py-2 rounded-full text-sm font-semibold"
-  >
-    {name} ({count} projects)
-  </span>
-))}
+                <div className="rounded-2xl bg-slate-50 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Internships</p>
+                  <p className="text-4xl font-bold text-emerald-600">{completedInternships.length}</p>
+                  <p className="mt-1 text-xs text-slate-400">completed</p>
                 </div>
               </div>
             </div>
 
             {/* COMPLETED INTERNSHIPS */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              {/* COMPLETED INTERNSHIPS */}
-<div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-  <div className="flex justify-between items-center mb-5">
-    <h3 className="text-2xl font-bold text-[#111827]">
-      Completed Internships
-    </h3>
-
-    <button
-      onClick={addInternship}
-      className="w-10 h-10 rounded-full bg-[#059669] hover:bg-[#047857] text-white text-2xl font-bold flex items-center justify-center"
-    >
-      +
-    </button>
-  </div>
-
-  {/* INPUT */}
-  <input
-    type="text"
-    value={newInternship}
-    onChange={(e) =>
-      setNewInternship(e.target.value)
-    }
-    placeholder="Add internship..."
-    className="w-full mb-5 border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-  />
-
-  <div className="space-y-3">
-    {completedInternships.map(
-      (internship, index) => (
-        <div
-          key={index}
-          className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 flex justify-between items-center"
-        >
-          <p>{internship}</p>
-
-          <button
-            onClick={() => {
-              const updatedInternships =
-                completedInternships.filter(
-                  (_, i) => i !== index
-                );
-
-              setCompletedInternships(
-                updatedInternships
-              );
-
-              localStorage.setItem(
-                `internships_${user.email}`,
-                JSON.stringify(
-                  updatedInternships
-                )
-              );
-            }}
-            className="text-red-500 font-semibold"
-          >
-            ✕
-          </button>
-        </div>
-      )
-    )}
-  </div>
-</div>
-
-            </div>
-          </div>
-        )}
-
-        {/* INSTRUCTOR PROFILE */}
-        {user.role === 'instructor' && (
-          <div className="space-y-8">
-           {/* BIO */}
-<div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-  <h3 className="text-2xl font-bold mb-5">
-    Biography
-  </h3>
-
-  <textarea
-    value={biography}
-    onChange={(e) =>
-      setBiography(e.target.value)
-    }
-    rows="5"
-    placeholder="Write your biography..."
-    className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-  />
-
-
-</div>
-
-            {/* RESEARCH */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Research Interests
-              </h3>
-
-              <textarea
-                value={researchInterests}
-                onChange={(e) =>
-                  setResearchInterests(
-                    e.target.value
-                  )
-                }
-                rows="5"
-                placeholder="Add research interests..."
-                className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-              />
-            </div>
-
-            {/* EDUCATION */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Education Background
-              </h3>
-
-              <textarea
-                value={education}
-                onChange={(e) =>
-                  setEducation(e.target.value)
-                }
-                rows="5"
-                placeholder="Add education background..."
-                className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-              />
-            </div>
-
-            {/* COURSES */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Courses Taught
-              </h3>
-
-              <div className="flex gap-3 mb-5">
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+              <h3 className="mb-5 text-xl font-bold text-slate-900">Completed Internships</h3>
+              <div className="mb-4 flex gap-2">
                 <input
-                  type="text"
-                  value={courseInput}
-                  onChange={(e) =>
-                    setCourseInput(e.target.value)
-                  }
-                  placeholder="Add course..."
-                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 outline-none focus:border-[#10b981]"
+                  value={newInternship}
+                  onChange={e => setNewInternship(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') addInternship(); }}
+                  placeholder="e.g. Frontend Intern @ Google"
+                  className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                 />
-
-                <button
-                  onClick={addCourse}
-                  className="bg-[#059669] hover:bg-[#047857] text-white px-5 rounded-xl"
-                >
+                <button onClick={addInternship} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
                   Add
                 </button>
               </div>
-
-              <div className="flex flex-wrap gap-3">
-                {courses.map((course, index) => (
-                  <div
-                    key={index}
-                    className="bg-[#ecfdf5] text-[#065f46] px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2"
-                  >
-                    {course}
-
-                    <button
-                      onClick={() =>
-                        removeCourse(course)
-                      }
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
+              {completedInternships.length > 0 ? (
+                <div className="space-y-2">
+                  {completedInternships.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                      <p className="text-sm text-slate-700">{item}</p>
+                      <button onClick={() => removeInternship(i)} className="text-red-400 transition hover:text-red-600">✕</button>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="text-sm italic text-slate-400">No internships added yet.</p>}
             </div>
+
           </div>
         )}
 
-        {/* EMPLOYER PROFILE */}
+        {/* ══ EMPLOYER SECTIONS ══ */}
         {user.role === 'employer' && (
           <div className="space-y-8">
+
             {/* COMPANY BIO */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Company Biography
-              </h3>
+            {isEditing && (
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+                <h3 className="text-2xl font-bold mb-5">Company Biography</h3>
+                <textarea
+                  value={companyBio}
+                  onChange={e => setCompanyBio(e.target.value)}
+                  rows={5}
+                  placeholder="Write company biography..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
+                />
+                <button
+                  onClick={() => localStorage.setItem(`companyBio_${user.email}`, companyBio)}
+                  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
+                >
+                  Save Biography
+                </button>
+              </div>
+            )}
 
-            <textarea
-  value={companyBio}
-  onChange={(e) =>
-    setCompanyBio(e.target.value)
-  }
-  rows="5"
-  placeholder="Write company biography..."
-  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-/>
-
-<button
-  onClick={saveCompanyBio}
-  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
->
-  Save Biography
-</button>
-            </div>
-
-           {/* ADDRESS */}
-<div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-  <h3 className="text-2xl font-bold mb-5">
-    Company Address
-  </h3>
-
-  <input
-    type="text"
-    value={companyAddress}
-    onChange={(e) =>
-      setCompanyAddress(e.target.value)
-    }
-    placeholder="Enter company address..."
-    className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-  />
-
-  <div className="flex gap-3 mt-5">
-    <button
-      onClick={saveCompanyAddress}
-      className="bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
-    >
-      Save Address
-    </button>
-
-    <button
-      onClick={openGoogleMaps}
-      className="bg-[#111827] hover:bg-black text-white px-6 py-3 rounded-xl font-semibold"
-    >
-      Open Google Maps
-    </button>
-  </div>
-</div>
+            {/* COMPANY ADDRESS */}
+            {isEditing && (
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+                <h3 className="text-2xl font-bold mb-5">Company Address</h3>
+                <input
+                  type="text"
+                  value={companyAddress}
+                  onChange={e => setCompanyAddress(e.target.value)}
+                  placeholder="Enter company address..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
+                />
+                <div className="flex gap-3 mt-5">
+                  <button
+                    onClick={() => localStorage.setItem(`companyAddress_${user.email}`, companyAddress)}
+                    className="bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
+                  >
+                    Save Address
+                  </button>
+                  <button
+                    onClick={openGoogleMaps}
+                    className="bg-[#111827] hover:bg-black text-white px-6 py-3 rounded-xl font-semibold"
+                  >
+                    Open Google Maps
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* CONTACT */}
+            {isEditing && (
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
+                <h3 className="text-2xl font-bold mb-5">Contact Information</h3>
+                <textarea
+                  value={companyContact}
+                  onChange={e => setCompanyContact(e.target.value)}
+                  rows={4}
+                  placeholder="Add contact information..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
+                />
+                <button
+                  onClick={() => localStorage.setItem(`companyContact_${user.email}`, companyContact)}
+                  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
+                >
+                  Save Contact Info
+                </button>
+              </div>
+            )}
+
+            {/* FAVORITES — always visible */}
             <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Contact Information
-              </h3>
-
-              <textarea
-  value={companyContact}
-  onChange={(e) =>
-    setCompanyContact(
-      e.target.value
-    )
-  }
-  rows="4"
-  placeholder="Add contact information..."
-  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-/>
-
-<button
-  onClick={saveCompanyContact}
-  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
->
-  Save Contact Info
-</button>
-            </div>
-
-            {/* FAVORITES */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">
-                Favorite Projects & Portfolios
-              </h3>
-
+              <h3 className="text-2xl font-bold mb-5">Favorite Projects & Portfolios</h3>
               {favorites.length > 0 ? (
                 <div className="space-y-3">
-                  {favorites.map((fav, index) => (
-                    <div
-                      key={index}
-                      className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 flex justify-between items-center"
-                    >
+                  {favorites.map((fav, i) => (
+                    <div key={i} className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
                       <div>
-  <p className="font-semibold text-[#111827]">
-    {fav.title}
-  </p>
-
-  <p className="text-gray-500 text-sm mt-1">
-    {fav.course}
-  </p>
-</div>
-
+                        <p className="font-semibold text-[#111827]">{fav.title || `${fav.firstName} ${fav.lastName}`}</p>
+                        <p className="text-gray-500 text-sm mt-1">{fav.course || 'Student Portfolio'}</p>
+                      </div>
                       <button
-                        onClick={() =>
-                          setFavorites((prev) =>
-                            prev.filter(
-                              (_, i) => i !== index
-                            )
-                          )
-                        }
+                        onClick={() => setFavorites(prev => prev.filter((_, idx) => idx !== i))}
                         className="text-red-500 text-sm font-semibold"
                       >
                         Remove
@@ -944,19 +847,200 @@ return (
                     </div>
                   ))}
                 </div>
-              ) : (
-                <p className="text-gray-400">
-                  No favorites added yet.
-                </p>
-              )}
+              ) : <p className="text-gray-400">No favorites added yet.</p>}
             </div>
+
           </div>
         )}
+
       </div>
+
+      {/* ══ PROJECT EDIT MODAL ══ */}
+      {showProjectEditModal && projectEditForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="mb-5 text-lg font-semibold text-slate-900">Edit Project</h3>
+            <div className="space-y-4">
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Title <span className="text-red-500">*</span></label>
+                <input
+                  value={projectEditForm.title}
+                  onChange={e => setProjectEditForm({ ...projectEditForm, title: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+                <textarea
+                  value={projectEditForm.description}
+                  onChange={e => setProjectEditForm({ ...projectEditForm, description: e.target.value })}
+                  rows={3}
+                  className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Course <span className="text-red-500">*</span></label>
+                <select
+                  value={projectEditForm.course}
+                  onChange={e => setProjectEditForm({ ...projectEditForm, course: e.target.value })}
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                >
+                  {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">GitHub Repository</label>
+                <input
+                  value={projectEditForm.githubLink}
+                  onChange={e => setProjectEditForm({ ...projectEditForm, githubLink: e.target.value })}
+                  placeholder="https://github.com/..."
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Demo Video URL</label>
+                <input
+                  value={projectEditForm.demoVideo}
+                  onChange={e => setProjectEditForm({ ...projectEditForm, demoVideo: e.target.value })}
+                  placeholder="https://youtube.com/..."
+                  className="w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Programming Languages / Tech Stack</label>
+                <div className="flex gap-2">
+                  <input
+                    value={projectEditLangInput}
+                    onChange={e => setProjectEditLangInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const v = projectEditLangInput.trim();
+                        if (v && !projectEditForm.languages.includes(v)) {
+                          setProjectEditForm({ ...projectEditForm, languages: [...projectEditForm.languages, v] });
+                          setProjectEditLangInput('');
+                        }
+                      }
+                    }}
+                    placeholder="e.g. Python"
+                    className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = projectEditLangInput.trim();
+                      if (v && !projectEditForm.languages.includes(v)) {
+                        setProjectEditForm({ ...projectEditForm, languages: [...projectEditForm.languages, v] });
+                        setProjectEditLangInput('');
+                      }
+                    }}
+                    className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                  >
+                    Add
+                  </button>
+                </div>
+                {projectEditForm.languages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {projectEditForm.languages.map(lang => (
+                      <span key={lang} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {lang}
+                        <button
+                          type="button"
+                          onClick={() => setProjectEditForm({ ...projectEditForm, languages: projectEditForm.languages.filter(l => l !== lang) })}
+                          className="ml-0.5 text-blue-400 hover:text-blue-800"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Tags</label>
+                <div className="flex gap-2">
+                  <input
+                    value={projectEditTagInput}
+                    onChange={e => setProjectEditTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const v = projectEditTagInput.trim();
+                        if (v && !projectEditForm.tags.includes(v)) {
+                          setProjectEditForm({ ...projectEditForm, tags: [...projectEditForm.tags, v] });
+                          setProjectEditTagInput('');
+                        }
+                      }
+                    }}
+                    placeholder="e.g. AR"
+                    className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = projectEditTagInput.trim();
+                      if (v && !projectEditForm.tags.includes(v)) {
+                        setProjectEditForm({ ...projectEditForm, tags: [...projectEditForm.tags, v] });
+                        setProjectEditTagInput('');
+                      }
+                    }}
+                    className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200"
+                  >
+                    Add
+                  </button>
+                </div>
+                {projectEditForm.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {projectEditForm.tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setProjectEditForm({ ...projectEditForm, tags: projectEditForm.tags.filter(t => t !== tag) })}
+                          className="ml-0.5 text-emerald-500 hover:text-emerald-800"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowProjectEditModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={saveProjectEdit} className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ PROJECT DELETE CONFIRM MODAL ══ */}
+      {projectDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">Delete Project?</h3>
+            <p className="mb-6 text-sm text-slate-500">
+              This will permanently delete <span className="font-semibold text-slate-700">"{projectDeleteTarget.title}"</span> and all its data. This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setProjectDeleteTarget(null)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={confirmDeleteProject} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
-
-
 };
 
 export default Profile;
