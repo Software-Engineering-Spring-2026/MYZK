@@ -27,8 +27,11 @@ function Eye({ closed, dx = 0, dy = 0, size = 14 }) {
 function Login() {
   const navigate = useNavigate();
   const studentFaceRef = useRef(null);
+  const employerFaceRef = useRef(null);
   const [studentPupilOffset, setStudentPupilOffset] = useState({ x: 0, y: 0 });
+  const [employerPupilOffset, setEmployerPupilOffset] = useState({ x: 0, y: 0 });
   const [eyesClosed, setEyesClosed] = useState(false);
+  const employerPupilBase = { x: -2.5, y: 0 };
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -87,6 +90,7 @@ function Login() {
       };
 
       updateOffset(studentFaceRef, setStudentPupilOffset);
+      updateOffset(employerFaceRef, setEmployerPupilOffset);
     };
 
     window.addEventListener("mousemove", handleMouseMove);
@@ -160,6 +164,7 @@ function Login() {
 
               <div className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
                 <div
+                  ref={employerFaceRef}
                   className="relative mx-auto h-40 w-32 select-none"
                   aria-hidden="true"
                 >
@@ -186,8 +191,16 @@ function Login() {
                       <path d="M 30 14 L 34 28" stroke="#a16207" strokeWidth="0.6" />
                     </svg>
                     <div className="absolute left-1/2 top-[48%] flex -translate-x-1/2 items-center justify-center gap-3">
-                      <Eye closed={eyesClosed} dx={-10} dy={0} />
-                      <Eye closed={eyesClosed} dx={-10} dy={0} />
+                      <Eye
+                        closed={eyesClosed}
+                        dx={employerPupilBase.x + employerPupilOffset.x}
+                        dy={employerPupilBase.y + employerPupilOffset.y}
+                      />
+                      <Eye
+                        closed={eyesClosed}
+                        dx={employerPupilBase.x + employerPupilOffset.x}
+                        dy={employerPupilBase.y + employerPupilOffset.y}
+                      />
                     </div>
                     <div className="absolute bottom-3 left-1/2 h-[2px] w-5 -translate-x-1/2 rounded-full bg-neutral-700"></div>
                   </div>
