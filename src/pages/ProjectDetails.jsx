@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 const MOCK_USERS = [
   { id: "u2", email: "sara@guc.com", firstName: "Sara", lastName: "Ahmed", role: "student" },
@@ -33,16 +33,26 @@ const MOCK_PROJECT = {
     { id: "d1", name: "Draft 1 - Initial Proposal.pdf", isFinal: false, isPrivate: false, uploadedAt: "2026-03-15", instructorComment: "Good introduction but needs a stronger methodology section." },
     { id: "d2", name: "Draft 2 - Revised Methodology.pdf", isFinal: true, isPrivate: false, uploadedAt: "2026-04-20", instructorComment: "" },
   ],
+  githubLink: "https://github.com/ahmed/smart-campus",
+  demoVideo: "",
+  languages: ["React Native", "Node.js", "PostgreSQL"],
   rating: 4,
   instructorFeedback: "Strong project concept with a clear implementation plan. The AR integration is innovative and well-scoped.",
   flagged: false,
   flagReason: "",
   appeal: "",
-  tags: ["React Native", "AR", "Node.js", "PostgreSQL"],
+  tags: ["AR", "IoT", "Navigation"],
 };
+
+const COURSES = [
+  "Bachelor Project","Software Engineering","Operating Systems","Machine Learning",
+  "Embedded Systems","Database Systems","Computer Networks","Artificial Intelligence",
+  "Mobile Development","Cyber Security","Data Structures","Algorithms",
+];
 
 function ProjectDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const user = (() => {
     try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
@@ -77,13 +87,18 @@ function ProjectDetails() {
   const [flagReason, setFlagReason] = useState("");
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [appealText, setAppealText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [editLangInput, setEditLangInput] = useState("");
+  const [editTagInput, setEditTagInput] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [invitations, setInvitations] = useState(() => {
     try { return JSON.parse(localStorage.getItem("myInvitations") || "[]"); } catch { return []; }
   });
 
   const isStudent = role === "student";
   const isInstructor = role === "instructor";
-  const isCreator = project.creatorId === currentUser.id;
+  const isCreator = project.creatorId === currentUser.email;
   const isBachelorProject = project.course === "Bachelor Project";
   const isCollaborator = project.collaborators?.some(c => c.userId === currentUser.id && c.status === "accepted");
   const isProjectInstructor = project.instructors?.some(i => i.userId === currentUser.id && i.status === "accepted");
@@ -247,6 +262,35 @@ function ProjectDetails() {
     setAppealText("");
   };
 
+  const openEditProject = () => {
+    setEditForm({
+      title: project.title,
+      description: project.description,
+      course: project.course,
+      githubLink: project.githubLink || "",
+      demoVideo: project.demoVideo || "",
+      languages: [...(project.languages || [])],
+      tags: [...(project.tags || [])],
+    });
+    setEditLangInput("");
+    setEditTagInput("");
+    setShowEditModal(true);
+  };
+
+  const saveEditProject = () => {
+    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.course) return;
+    saveProject({ ...project, ...editForm });
+    setShowEditModal(false);
+  };
+
+  const deleteProject = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("projects") || "[]");
+      localStorage.setItem("projects", JSON.stringify(stored.filter(p => p.id !== project.id)));
+    } catch {}
+    navigate("/home");
+  };
+
   const handleInvitationResponse = (invId, response) => {
     const updated = invitations.map(inv => inv.id === invId ? { ...inv, status: response } : inv);
     setInvitations(updated);
@@ -348,6 +392,18 @@ function ProjectDetails() {
                 </button>
               )}
 
+              {/* Edit / Delete — creator only */}
+              {isCreator && (
+                <>
+                  <button onClick={openEditProject} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+                    Edit Project
+                  </button>
+                  <button onClick={() => setShowDeleteConfirm(true)} className="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100">
+                    Delete Project
+                  </button>
+                </>
+              )}
+
               {/* Flag / unflag — instructor & admin */}
               {(isInstructor || role === "admin") && !project.flagged && (
                 <button onClick={() => setShowFlagModal(true)} className="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100">
@@ -408,7 +464,7 @@ function ProjectDetails() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { label: "Course", value: project.course },
-                  { label: "Visibility", value: project.isPublic ? "Public" : "Private" },
+                  { label: "Created", value: project.createdAt || "—" },
                   { label: "Active Collaborators", value: project.collaborators?.filter(c => c.status === "accepted").length || 0 },
                   { label: "Tasks Completed", value: `${project.tasks?.filter(t => t.status === "completed").length || 0} / ${project.tasks?.length || 0}` },
                 ].map(item => (
@@ -418,6 +474,42 @@ function ProjectDetails() {
                   </div>
                 ))}
               </div>
+
+              {/* Languages */}
+              {(project.languages?.length > 0) && (
+                <div className="mt-5">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Programming Languages / Tech Stack</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.languages.map(lang => (
+                      <span key={lang} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">{lang}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* GitHub & Demo Video links */}
+              {(project.githubLink || project.demoVideo) && (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {project.githubLink && (
+                    <a href={project.githubLink} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-slate-500">
+                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                      </svg>
+                      GitHub Repository
+                    </a>
+                  )}
+                  {project.demoVideo && (
+                    <a href={project.demoVideo} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-slate-500">
+                        <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      </svg>
+                      Demo Video
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Instructor feedback — visible to project members */}
@@ -868,6 +960,99 @@ function ProjectDetails() {
             <div className="mt-4 flex justify-end gap-3">
               <button onClick={() => setShowFlagModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
               <button onClick={submitFlag} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Flag Project</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project modal */}
+      {showEditModal && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="mb-5 text-lg font-semibold text-slate-900">Edit Project</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Title <span className="text-red-500">*</span></label>
+                <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+                <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Course <span className="text-red-500">*</span></label>
+                <select value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                  {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">GitHub Repository</label>
+                <input value={editForm.githubLink} onChange={e => setEditForm({ ...editForm, githubLink: e.target.value })} placeholder="https://github.com/..." className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Demo Video URL</label>
+                <input value={editForm.demoVideo} onChange={e => setEditForm({ ...editForm, demoVideo: e.target.value })} placeholder="https://youtube.com/..." className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Programming Languages / Tech Stack</label>
+                <div className="mt-1 flex gap-2">
+                  <input value={editLangInput} onChange={e => setEditLangInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const v = editLangInput.trim(); if (v && !editForm.languages.includes(v)) { setEditForm({ ...editForm, languages: [...editForm.languages, v] }); setEditLangInput(""); } } }}
+                    placeholder="e.g. Python" className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+                  <button type="button" onClick={() => { const v = editLangInput.trim(); if (v && !editForm.languages.includes(v)) { setEditForm({ ...editForm, languages: [...editForm.languages, v] }); setEditLangInput(""); } }} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200">Add</button>
+                </div>
+                {editForm.languages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editForm.languages.map(lang => (
+                      <span key={lang} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {lang}
+                        <button type="button" onClick={() => setEditForm({ ...editForm, languages: editForm.languages.filter(l => l !== lang) })} className="ml-0.5 text-blue-400 hover:text-blue-800">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Tags</label>
+                <div className="mt-1 flex gap-2">
+                  <input value={editTagInput} onChange={e => setEditTagInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const v = editTagInput.trim(); if (v && !editForm.tags.includes(v)) { setEditForm({ ...editForm, tags: [...editForm.tags, v] }); setEditTagInput(""); } } }}
+                    placeholder="e.g. AR" className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+                  <button type="button" onClick={() => { const v = editTagInput.trim(); if (v && !editForm.tags.includes(v)) { setEditForm({ ...editForm, tags: [...editForm.tags, v] }); setEditTagInput(""); } }} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200">Add</button>
+                </div>
+                {editForm.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editForm.tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                        {tag}
+                        <button type="button" onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) })} className="ml-0.5 text-emerald-500 hover:text-emerald-800">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowEditModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={saveEditProject} className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">Delete Project?</h3>
+            <p className="mb-6 text-sm text-slate-500">This will permanently delete <span className="font-semibold text-slate-700">"{project.title}"</span> and all its data. This cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={deleteProject} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Delete</button>
             </div>
           </div>
         </div>
