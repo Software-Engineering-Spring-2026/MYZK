@@ -78,7 +78,7 @@ function ProjectDetails() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const [draftName, setDraftName] = useState("");
+const [draftFile, setDraftFile] = useState(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentTarget, setCommentTarget] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -198,16 +198,43 @@ function ProjectDetails() {
     saveProject(updated);
   };
 
-  const removeCollaborator = (userId) =>
-    saveProject({ ...project, collaborators: project.collaborators.filter(c => c.userId !== userId) });
-
-  const uploadDraft = () => {
-    if (!draftName.trim()) return;
-    const draft = { id: Date.now().toString(), name: draftName, isFinal: false, isPrivate: false, uploadedAt: new Date().toISOString().split("T")[0], instructorComment: "" };
-    saveProject({ ...project, thesisDrafts: [...(project.thesisDrafts || []), draft] });
-    setDraftName("");
-    setShowDraftModal(false);
+const removeCollaborator = (userId) => {
+  const updatedProject = {
+    ...project,
+    collaborators: project.collaborators.filter(
+      (c) => c.userId !== userId
+    ),
   };
+
+  saveProject(updatedProject);
+
+  addNotification(
+    userId,
+    `You were removed from the project "${project.title}"`
+  );
+};
+
+ const uploadDraft = () => {
+  if (!draftFile) return;
+
+  const draft = {
+    id: Date.now().toString(),
+    name: draftFile.name,
+    fileUrl: URL.createObjectURL(draftFile),
+    isFinal: false,
+    isPrivate: false,
+    uploadedAt: new Date().toISOString().split("T")[0],
+    instructorComment: "",
+  };
+
+  saveProject({
+    ...project,
+    thesisDrafts: [...(project.thesisDrafts || []), draft],
+  });
+
+  setDraftFile(null);
+  setShowDraftModal(false);
+};
 
   const selectFinalDraft = (draftId) => {
     const updatedDrafts = project.thesisDrafts.map(d => ({
@@ -265,7 +292,7 @@ function ProjectDetails() {
   const openEditProject = () => {
     setEditForm({
       title: project.title,
-      description: project.description,
+      Report: project.description,
       course: project.course,
       githubLink: project.githubLink || "",
       demoVideo: project.demoVideo || "",
@@ -745,7 +772,14 @@ function ProjectDetails() {
                       {draft.isPrivate && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-500">Private</span>}
                       <span className="text-xs text-slate-400">{draft.uploadedAt}</span>
                     </div>
-                    <p className="font-medium text-slate-900">{draft.name}</p>
+                    <a
+  href={draft.fileUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="font-medium text-emerald-600 transition hover:underline"
+>
+  {draft.name}
+</a>
                     {draft.instructorComment && canSeeComments && (
                       <div className="mt-3 rounded-xl border border-slate-100 bg-white p-3">
                         <p className="text-xs font-semibold text-emerald-700">Instructor Comment:</p>
@@ -928,13 +962,22 @@ function ProjectDetails() {
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" />
               </svg>
               <p className="mb-3 text-xs text-slate-400">Enter the draft file name</p>
-              <input
-                type="text"
-                placeholder="e.g. Draft 3 - Final Revision.pdf"
-                value={draftName}
-                onChange={e => setDraftName(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-              />
+              <p className="mb-3 text-xs text-slate-400">
+  Upload your thesis draft file
+</p>
+
+<input
+  type="file"
+  accept=".pdf,.doc,.docx"
+  onChange={(e) => setDraftFile(e.target.files[0])}
+  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+/>
+
+{draftFile && (
+  <p className="mt-3 text-sm text-emerald-600">
+    Selected: {draftFile.name}
+  </p>
+)}
             </div>
             <div className="mt-4 flex justify-end gap-3">
               <button onClick={() => setShowDraftModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
@@ -976,7 +1019,7 @@ function ProjectDetails() {
                 <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
               </div>
               <div>
-                <label className="text-sm font-semibold text-slate-700">Description <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-slate-700">Report <span className="text-red-500">*</span></label>
                 <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
               </div>
               <div>

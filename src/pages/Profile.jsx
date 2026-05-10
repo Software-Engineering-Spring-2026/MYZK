@@ -725,6 +725,63 @@ const Profile = () => {
               </div>
             </div>
 
+{/* TOP COLLABORATORS */}
+<div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+  <h3 className="mb-6 text-xl font-bold text-slate-900">
+    Top Collaborators
+  </h3>
+
+  {[
+    {
+      id: 1,
+      firstName: "Marina",
+      lastName: "Nader",
+      email: "marina.nader@guc.edu.eg",
+      count: 6,
+    },
+    {
+      id: 2,
+      firstName: "Mervat",
+      lastName: "Abuelkheir",
+      email: "mervat.abuelkheir@guc.edu.eg",
+      count: 4,
+    },
+    {
+      id: 3,
+      firstName: "Youssef",
+      lastName: "Adel",
+      email: "youssef.adel@guc.edu.eg",
+      count: 3,
+    },
+  ].map((collab, index) => (
+    <div
+      key={collab.id}
+      className="mb-4 flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-5"
+    >
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-lg font-bold text-emerald-700">
+          #{index + 1}
+        </div>
+
+        <div>
+          <p className="font-semibold text-slate-900">
+            {collab.firstName} {collab.lastName}
+          </p>
+
+          <p className="text-sm text-slate-400">
+            {collab.email}
+          </p>
+        </div>
+      </div>
+
+      <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+        {collab.count} Projects
+      </div>
+    </div>
+  ))}
+</div>
+
+
             {/* COMPLETED INTERNSHIPS */}
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
               <h3 className="mb-5 text-xl font-bold text-slate-900">Completed Internships</h3>
