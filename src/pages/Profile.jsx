@@ -17,20 +17,35 @@ const Profile = () => {
   const viewEmail = new URLSearchParams(location.search).get('email');
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;
+  const isAdminViewer = user?.role === 'admin';
 
   // ---------------- VIEW ANOTHER STUDENT ----------------
   if (viewEmail && viewEmail !== user.email) {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
     const viewed = storedUsers.find(u => u.email === viewEmail);
+    const viewedName = viewed ? `${viewed.firstName} ${viewed.lastName}`.trim() : '';
+    const viewedNameLower = viewedName.toLowerCase();
     const viewedProjects = (JSON.parse(localStorage.getItem('projects')) || [])
-      .filter(p => p.creatorId === viewEmail && p.isPublic !== false);
+      .filter(p => {
+        const creatorName = (p.creatorName || '').toLowerCase();
+        const matchesOwner =
+          p.creatorId === viewEmail ||
+          p.creatorEmail === viewEmail ||
+          p.ownerEmail === viewEmail ||
+          (viewed?.id && p.creatorId === viewed.id) ||
+          (viewedNameLower && creatorName === viewedNameLower);
+
+        if (!matchesOwner) return false;
+        if (!isAdminViewer && p.isPublic === false) return false;
+        return true;
+      });
     const viewedSkills = JSON.parse(localStorage.getItem(`skills_${viewEmail}`)) || viewed?.skills || [];
     const viewedMajor = localStorage.getItem(`major_${viewEmail}`) || viewed?.major || '';
     const viewedLinkedIn = localStorage.getItem(`linkedin_${viewEmail}`) || '';
     const viewedBio = localStorage.getItem(`bio_${viewEmail}`) || '';
     const viewedFavorites = JSON.parse(localStorage.getItem(`favorites_${viewEmail}`)) || [];
     const viewedInternships = JSON.parse(localStorage.getItem(`internships_${viewEmail}`)) || [];
-    const displayName = viewed ? `${viewed.firstName} ${viewed.lastName}` : viewEmail;
+    const displayName = viewedName || viewEmail;
 
     const viewedLangCounts = (() => {
       const all = viewedProjects.flatMap(p => p.languages || []);
