@@ -10,6 +10,7 @@ import CreateProject from "./pages/CreateProject";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
+import InstructorProfile from "./pages/InstructorProfile";
 
 function App() {
   useEffect(() => {
@@ -47,6 +48,7 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/instructor/:email" element={<InstructorProfile />} />
       </Routes>
     </BrowserRouter>
   );

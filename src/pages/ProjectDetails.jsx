@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 
 const MOCK_USERS = [
   { id: "u2", email: "sara@guc.com", firstName: "Sara", lastName: "Ahmed", role: "student" },
@@ -13,6 +13,7 @@ const MOCK_PROJECT = {
   id: "demo",
   title: "Smart Campus Navigation System",
   description: "A mobile application that helps students navigate the GUC campus using augmented reality and real-time occupancy data.",
+  report: "This project delivers an AR-based indoor navigation system for the GUC campus. The mobile app overlays directional cues on the live camera feed using ARCore, while a Node.js/PostgreSQL backend provides real-time room occupancy data sourced from IoT sensors. Users can search for rooms, track capacity, and receive turn-by-turn directions without prior knowledge of the building layout. The system was tested across three GUC buildings with a 92% route-completion accuracy.",
   course: "Bachelor Project",
   isPublic: true,
   creatorId: "u1",
@@ -33,16 +34,26 @@ const MOCK_PROJECT = {
     { id: "d1", name: "Draft 1 - Initial Proposal.pdf", isFinal: false, isPrivate: false, uploadedAt: "2026-03-15", instructorComment: "Good introduction but needs a stronger methodology section." },
     { id: "d2", name: "Draft 2 - Revised Methodology.pdf", isFinal: true, isPrivate: false, uploadedAt: "2026-04-20", instructorComment: "" },
   ],
+  githubLink: "https://github.com/ahmed/smart-campus",
+  demoVideo: "",
+  languages: ["React Native", "Node.js", "PostgreSQL"],
   rating: 4,
   instructorFeedback: "Strong project concept with a clear implementation plan. The AR integration is innovative and well-scoped.",
   flagged: false,
   flagReason: "",
   appeal: "",
-  tags: ["React Native", "AR", "Node.js", "PostgreSQL"],
+  tags: ["AR", "IoT", "Navigation"],
 };
+
+const COURSES = [
+  "Bachelor Project","Software Engineering","Operating Systems","Machine Learning",
+  "Embedded Systems","Database Systems","Computer Networks","Artificial Intelligence",
+  "Mobile Development","Cyber Security","Data Structures","Algorithms",
+];
 
 function ProjectDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const user = (() => {
     try { return JSON.parse(localStorage.getItem("user")); } catch { return null; }
@@ -68,7 +79,7 @@ function ProjectDetails() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showDraftModal, setShowDraftModal] = useState(false);
-  const [draftName, setDraftName] = useState("");
+const [draftFile, setDraftFile] = useState(null);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [commentTarget, setCommentTarget] = useState(null);
   const [commentText, setCommentText] = useState("");
@@ -77,17 +88,24 @@ function ProjectDetails() {
   const [flagReason, setFlagReason] = useState("");
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [appealText, setAppealText] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState(null);
+  const [editLangInput, setEditLangInput] = useState("");
+  const [editTagInput, setEditTagInput] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reportText, setReportText] = useState(project.report || "");
+  const [isEditingReport, setIsEditingReport] = useState(false);
   const [invitations, setInvitations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("myInvitations") || "[]"); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(`invitations_${currentUser.email}`) || "[]"); } catch { return []; }
   });
 
   const isStudent = role === "student";
   const isInstructor = role === "instructor";
-  const isCreator = project.creatorId === currentUser.id;
+  const isCreator = project.creatorId === currentUser.email;
   const isBachelorProject = project.course === "Bachelor Project";
   const isCollaborator = project.collaborators?.some(c => c.userId === currentUser.id && c.status === "accepted");
   const isProjectInstructor = project.instructors?.some(i => i.userId === currentUser.id && i.status === "accepted");
-  const canSeeComments = isCreator || isCollaborator || isProjectInstructor || isInstructor;
+  const canSeeComments = isCreator || isCollaborator || isProjectInstructor;
 
   const saveProject = (updated) => {
     setProject(updated);
@@ -155,25 +173,45 @@ function ProjectDetails() {
       ...(project.collaborators || []).map(c => c.userId),
       ...(project.instructors || []).map(i => i.userId),
     ];
+    const storedUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const allUsers = [
+      ...MOCK_USERS,
+      ...storedUsers.filter(u => !MOCK_USERS.some(m => m.id === u.id || m.email === u.email)),
+    ];
     setSearchResults(
-      MOCK_USERS.filter(u =>
+      allUsers.filter(u =>
         u.id !== currentUser.id &&
+        u.email !== currentUser.email &&
         !alreadyAdded.includes(u.id) &&
-        (u.email.toLowerCase().includes(lower) ||
-          u.firstName.toLowerCase().includes(lower) ||
-          u.lastName.toLowerCase().includes(lower))
+        ((u.email || "").toLowerCase().includes(lower) ||
+          (u.firstName || "").toLowerCase().includes(lower) ||
+          (u.lastName || "").toLowerCase().includes(lower))
       )
     );
   };
 
-  const sendInvitation = (user) => {
-    const entry = { userId: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, status: "pending" };
-    const updated = user.role === "instructor"
+  const sendInvitation = (invUser) => {
+    const entry = { userId: invUser.id, email: invUser.email, firstName: invUser.firstName, lastName: invUser.lastName, status: "pending" };
+    const updated = invUser.role === "instructor"
       ? { ...project, instructors: [...(project.instructors || []), entry] }
       : { ...project, collaborators: [...(project.collaborators || []), entry] };
     saveProject(updated);
-    addNotification(user.id, `You have been invited to join the project "${project.title}"`);
-    setSearchResults(prev => prev.filter(r => r.id !== user.id));
+
+    const invKey = `invitations_${invUser.email}`;
+    const existing = JSON.parse(localStorage.getItem(invKey) || "[]");
+    const inv = {
+      id: Date.now().toString(),
+      projectId: project.id,
+      projectTitle: project.title,
+      fromName: `${currentUser.firstName} ${currentUser.lastName}`,
+      role: invUser.role === "instructor" ? "instructor" : "collaborator",
+      status: "pending",
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    localStorage.setItem(invKey, JSON.stringify([...existing, inv]));
+
+    addNotification(invUser.id, `You have been invited to join the project "${project.title}"`);
+    setSearchResults(prev => prev.filter(r => r.id !== invUser.id));
   };
 
   const cancelInvitation = (userId, type) => {
@@ -183,16 +221,43 @@ function ProjectDetails() {
     saveProject(updated);
   };
 
-  const removeCollaborator = (userId) =>
-    saveProject({ ...project, collaborators: project.collaborators.filter(c => c.userId !== userId) });
-
-  const uploadDraft = () => {
-    if (!draftName.trim()) return;
-    const draft = { id: Date.now().toString(), name: draftName, isFinal: false, isPrivate: false, uploadedAt: new Date().toISOString().split("T")[0], instructorComment: "" };
-    saveProject({ ...project, thesisDrafts: [...(project.thesisDrafts || []), draft] });
-    setDraftName("");
-    setShowDraftModal(false);
+const removeCollaborator = (userId) => {
+  const updatedProject = {
+    ...project,
+    collaborators: project.collaborators.filter(
+      (c) => c.userId !== userId
+    ),
   };
+
+  saveProject(updatedProject);
+
+  addNotification(
+    userId,
+    `You were removed from the project "${project.title}"`
+  );
+};
+
+ const uploadDraft = () => {
+  if (!draftFile) return;
+
+  const draft = {
+    id: Date.now().toString(),
+    name: draftFile.name,
+    fileUrl: URL.createObjectURL(draftFile),
+    isFinal: false,
+    isPrivate: false,
+    uploadedAt: new Date().toISOString().split("T")[0],
+    instructorComment: "",
+  };
+
+  saveProject({
+    ...project,
+    thesisDrafts: [...(project.thesisDrafts || []), draft],
+  });
+
+  setDraftFile(null);
+  setShowDraftModal(false);
+};
 
   const selectFinalDraft = (draftId) => {
     const updatedDrafts = project.thesisDrafts.map(d => ({
@@ -247,10 +312,68 @@ function ProjectDetails() {
     setAppealText("");
   };
 
+  const openEditProject = () => {
+    setEditForm({
+      title: project.title,
+      description: project.description,
+      course: project.course,
+      githubLink: project.githubLink || "",
+      demoVideo: project.demoVideo || "",
+      languages: [...(project.languages || [])],
+      tags: [...(project.tags || [])],
+    });
+    setEditLangInput("");
+    setEditTagInput("");
+    setShowEditModal(true);
+  };
+
+  const saveEditProject = () => {
+    if (!editForm.title.trim() || !editForm.description.trim() || !editForm.course) return;
+    saveProject({ ...project, ...editForm });
+    setShowEditModal(false);
+  };
+
+  const deleteProject = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("projects") || "[]");
+      localStorage.setItem("projects", JSON.stringify(stored.filter(p => p.id !== project.id)));
+    } catch {}
+    navigate("/home");
+  };
+
   const handleInvitationResponse = (invId, response) => {
-    const updated = invitations.map(inv => inv.id === invId ? { ...inv, status: response } : inv);
+    const updated = invitations.map(inv => {
+      if (inv.id !== invId) return inv;
+      const stored = JSON.parse(localStorage.getItem("projects") || "[]");
+      const projIdx = stored.findIndex(p => p.id === inv.projectId);
+      if (projIdx >= 0) {
+        const proj = { ...stored[projIdx] };
+        const isInstructorRole = inv.role === "instructor";
+        if (response === "accepted") {
+          if (isInstructorRole) {
+            proj.instructors = (proj.instructors || []).map(i =>
+              i.userId === currentUser.id ? { ...i, status: "accepted" } : i
+            );
+          } else {
+            proj.collaborators = (proj.collaborators || []).map(c =>
+              c.userId === currentUser.id ? { ...c, status: "accepted" } : c
+            );
+          }
+        } else {
+          if (isInstructorRole) {
+            proj.instructors = (proj.instructors || []).filter(i => i.userId !== currentUser.id);
+          } else {
+            proj.collaborators = (proj.collaborators || []).filter(c => c.userId !== currentUser.id);
+          }
+        }
+        stored[projIdx] = proj;
+        localStorage.setItem("projects", JSON.stringify(stored));
+        if (inv.projectId === project.id) setProject(proj);
+      }
+      return { ...inv, status: response };
+    });
     setInvitations(updated);
-    localStorage.setItem("myInvitations", JSON.stringify(updated));
+    localStorage.setItem(`invitations_${currentUser.email}`, JSON.stringify(updated));
   };
 
   const sortedTasks = [...(project.tasks || [])].sort((a, b) => a.order - b.order);
@@ -325,16 +448,16 @@ function ProjectDetails() {
                     key={s}
                     viewBox="0 0 24 24"
                     className={`h-5 w-5 transition ${(hoveredStar || project.rating || 0) >= s ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`}
-                    onMouseEnter={() => isInstructor && setHoveredStar(s)}
-                    onMouseLeave={() => isInstructor && setHoveredStar(0)}
-                    onClick={() => isInstructor && saveProject({ ...project, rating: s })}
-                    style={{ cursor: isInstructor ? "pointer" : "default" }}
+                    onMouseEnter={() => isProjectInstructor && setHoveredStar(s)}
+                    onMouseLeave={() => isProjectInstructor && setHoveredStar(0)}
+                    onClick={() => isProjectInstructor && saveProject({ ...project, rating: s })}
+                    style={{ cursor: isProjectInstructor ? "pointer" : "default" }}
                   >
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 ))}
                 <span className="ml-1 text-sm text-slate-500">{project.rating ? `${project.rating}/5` : "No rating"}</span>
-                {isInstructor && <span className="ml-1 text-xs text-slate-400">(click to rate)</span>}
+                {isProjectInstructor && <span className="ml-1 text-xs text-slate-400">(click to rate)</span>}
               </div>
 
               {/* Visibility toggle — creator student only */}
@@ -348,13 +471,25 @@ function ProjectDetails() {
                 </button>
               )}
 
-              {/* Flag / unflag — instructor & admin */}
-              {(isInstructor || role === "admin") && !project.flagged && (
+              {/* Edit / Delete — creator only */}
+              {isCreator && (
+                <>
+                  <button onClick={openEditProject} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
+                    Edit Project
+                  </button>
+                  <button onClick={() => setShowDeleteConfirm(true)} className="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100">
+                    Delete Project
+                  </button>
+                </>
+              )}
+
+              {/* Flag / unflag — assigned instructor & admin only */}
+              {(isProjectInstructor || role === "admin") && !project.flagged && (
                 <button onClick={() => setShowFlagModal(true)} className="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100">
                   Flag Project
                 </button>
               )}
-              {(isInstructor || role === "admin") && project.flagged && (
+              {(isProjectInstructor || role === "admin") && project.flagged && (
                 <button onClick={() => saveProject({ ...project, flagged: false, flagReason: "", appeal: "" })} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
                   Remove Flag
                 </button>
@@ -408,7 +543,7 @@ function ProjectDetails() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {[
                   { label: "Course", value: project.course },
-                  { label: "Visibility", value: project.isPublic ? "Public" : "Private" },
+                  { label: "Created", value: project.createdAt || "—" },
                   { label: "Active Collaborators", value: project.collaborators?.filter(c => c.status === "accepted").length || 0 },
                   { label: "Tasks Completed", value: `${project.tasks?.filter(t => t.status === "completed").length || 0} / ${project.tasks?.length || 0}` },
                 ].map(item => (
@@ -418,14 +553,89 @@ function ProjectDetails() {
                   </div>
                 ))}
               </div>
+
+              {/* Languages */}
+              {(project.languages?.length > 0) && (
+                <div className="mt-5">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Programming Languages / Tech Stack</p>
+                  <div className="flex flex-wrap gap-2">
+                    {project.languages.map(lang => (
+                      <span key={lang} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">{lang}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* GitHub & Demo Video links */}
+              {(project.githubLink || project.demoVideo) && (
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {project.githubLink && (
+                    <a href={project.githubLink} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                      <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-slate-500">
+                        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                      </svg>
+                      GitHub Repository
+                    </a>
+                  )}
+                  {project.demoVideo && (
+                    <a href={project.demoVideo} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-slate-500">
+                        <polygon points="23 7 16 12 23 17 23 7" /><rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+                      </svg>
+                      Demo Video
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Instructor feedback — visible to project members */}
-            {(canSeeComments || isInstructor) && (
+            {/* Project Report */}
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">Project Report</h2>
+                {(isCreator || (isCollaborator && isStudent)) && !isEditingReport && (
+                  <button
+                    onClick={() => { setReportText(project.report || ""); setIsEditingReport(true); }}
+                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200"
+                  >
+                    {project.report ? "Edit" : "Write Report"}
+                  </button>
+                )}
+              </div>
+              {isEditingReport ? (
+                <>
+                  <textarea
+                    value={reportText}
+                    onChange={e => setReportText(e.target.value)}
+                    rows={8}
+                    placeholder="Write a detailed project report — methodology, results, technical decisions..."
+                    className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button onClick={() => setIsEditingReport(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+                    <button
+                      onClick={() => { saveProject({ ...project, report: reportText }); setIsEditingReport(false); }}
+                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                    >
+                      Save Report
+                    </button>
+                  </div>
+                </>
+              ) : project.report ? (
+                <p className="whitespace-pre-wrap leading-relaxed text-slate-700">{project.report}</p>
+              ) : (
+                <p className="text-sm italic text-slate-400">No report written yet.</p>
+              )}
+            </div>
+
+            {/* Instructor feedback — visible to creator, collaborators, assigned instructors only */}
+            {canSeeComments && (
               <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">Instructor Feedback</h2>
-                  {isInstructor && (
+                  {isProjectInstructor && (
                     <div className="flex gap-2">
                       <button onClick={() => openComment("project", "general", project.instructorFeedback)} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">
                         {project.instructorFeedback ? "Edit" : "Add Feedback"}
@@ -513,7 +723,7 @@ function ProjectDetails() {
                       </>
                     )}
 
-                    {isInstructor && (
+                    {isProjectInstructor && (
                       <div className="flex gap-1">
                         <button onClick={() => openComment("task", task.id, task.instructorComment)} className="rounded-xl bg-emerald-50 px-3 py-1 text-xs text-emerald-700 transition hover:bg-emerald-100">
                           {task.instructorComment ? "Edit Comment" : "Comment"}
@@ -653,7 +863,14 @@ function ProjectDetails() {
                       {draft.isPrivate && <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-500">Private</span>}
                       <span className="text-xs text-slate-400">{draft.uploadedAt}</span>
                     </div>
-                    <p className="font-medium text-slate-900">{draft.name}</p>
+                    <a
+  href={draft.fileUrl}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="font-medium text-emerald-600 transition hover:underline"
+>
+  {draft.name}
+</a>
                     {draft.instructorComment && canSeeComments && (
                       <div className="mt-3 rounded-xl border border-slate-100 bg-white p-3">
                         <p className="text-xs font-semibold text-emerald-700">Instructor Comment:</p>
@@ -667,7 +884,7 @@ function ProjectDetails() {
                         Set as Final
                       </button>
                     )}
-                    {isInstructor && (
+                    {isProjectInstructor && (
                       <>
                         <button onClick={() => openComment("draft", draft.id, draft.instructorComment)} className="rounded-xl bg-emerald-50 px-3 py-1 text-xs text-emerald-700 transition hover:bg-emerald-100">
                           {draft.instructorComment ? "Edit Comment" : "Comment"}
@@ -836,13 +1053,22 @@ function ProjectDetails() {
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17,8 12,3 7,8" /><line x1="12" y1="3" x2="12" y2="15" />
               </svg>
               <p className="mb-3 text-xs text-slate-400">Enter the draft file name</p>
-              <input
-                type="text"
-                placeholder="e.g. Draft 3 - Final Revision.pdf"
-                value={draftName}
-                onChange={e => setDraftName(e.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-              />
+              <p className="mb-3 text-xs text-slate-400">
+  Upload your thesis draft file
+</p>
+
+<input
+  type="file"
+  accept=".pdf,.doc,.docx"
+  onChange={(e) => setDraftFile(e.target.files[0])}
+  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-emerald-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100"
+/>
+
+{draftFile && (
+  <p className="mt-3 text-sm text-emerald-600">
+    Selected: {draftFile.name}
+  </p>
+)}
             </div>
             <div className="mt-4 flex justify-end gap-3">
               <button onClick={() => setShowDraftModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
@@ -868,6 +1094,99 @@ function ProjectDetails() {
             <div className="mt-4 flex justify-end gap-3">
               <button onClick={() => setShowFlagModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
               <button onClick={submitFlag} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Flag Project</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Project modal */}
+      {showEditModal && editForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h3 className="mb-5 text-lg font-semibold text-slate-900">Edit Project</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Title <span className="text-red-500">*</span></label>
+                <input value={editForm.title} onChange={e => setEditForm({ ...editForm, title: e.target.value })} className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Report <span className="text-red-500">*</span></label>
+                <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} rows={3} className="mt-1 w-full resize-none rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Course <span className="text-red-500">*</span></label>
+                <select value={editForm.course} onChange={e => setEditForm({ ...editForm, course: e.target.value })} className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30">
+                  {COURSES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">GitHub Repository</label>
+                <input value={editForm.githubLink} onChange={e => setEditForm({ ...editForm, githubLink: e.target.value })} placeholder="https://github.com/..." className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Demo Video URL</label>
+                <input value={editForm.demoVideo} onChange={e => setEditForm({ ...editForm, demoVideo: e.target.value })} placeholder="https://youtube.com/..." className="mt-1 w-full rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Programming Languages / Tech Stack</label>
+                <div className="mt-1 flex gap-2">
+                  <input value={editLangInput} onChange={e => setEditLangInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const v = editLangInput.trim(); if (v && !editForm.languages.includes(v)) { setEditForm({ ...editForm, languages: [...editForm.languages, v] }); setEditLangInput(""); } } }}
+                    placeholder="e.g. Python" className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+                  <button type="button" onClick={() => { const v = editLangInput.trim(); if (v && !editForm.languages.includes(v)) { setEditForm({ ...editForm, languages: [...editForm.languages, v] }); setEditLangInput(""); } }} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200">Add</button>
+                </div>
+                {editForm.languages.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editForm.languages.map(lang => (
+                      <span key={lang} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700">
+                        {lang}
+                        <button type="button" onClick={() => setEditForm({ ...editForm, languages: editForm.languages.filter(l => l !== lang) })} className="ml-0.5 text-blue-400 hover:text-blue-800">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-semibold text-slate-700">Tags</label>
+                <div className="mt-1 flex gap-2">
+                  <input value={editTagInput} onChange={e => setEditTagInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const v = editTagInput.trim(); if (v && !editForm.tags.includes(v)) { setEditForm({ ...editForm, tags: [...editForm.tags, v] }); setEditTagInput(""); } } }}
+                    placeholder="e.g. AR" className="flex-1 rounded-2xl border border-slate-200 px-4 py-2.5 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30" />
+                  <button type="button" onClick={() => { const v = editTagInput.trim(); if (v && !editForm.tags.includes(v)) { setEditForm({ ...editForm, tags: [...editForm.tags, v] }); setEditTagInput(""); } }} className="rounded-2xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200">Add</button>
+                </div>
+                {editForm.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {editForm.tags.map(tag => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                        {tag}
+                        <button type="button" onClick={() => setEditForm({ ...editForm, tags: editForm.tags.filter(t => t !== tag) })} className="ml-0.5 text-emerald-500 hover:text-emerald-800">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-3 w-3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => setShowEditModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={saveEditProject} className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-slate-900">Delete Project?</h3>
+            <p className="mb-6 text-sm text-slate-500">This will permanently delete <span className="font-semibold text-slate-700">"{project.title}"</span> and all its data. This cannot be undone.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={deleteProject} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Delete</button>
             </div>
           </div>
         </div>
