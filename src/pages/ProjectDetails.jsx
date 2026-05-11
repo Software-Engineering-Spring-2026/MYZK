@@ -13,6 +13,7 @@ const MOCK_PROJECT = {
   id: "demo",
   title: "Smart Campus Navigation System",
   description: "A mobile application that helps students navigate the GUC campus using augmented reality and real-time occupancy data.",
+  report: "This project delivers an AR-based indoor navigation system for the GUC campus. The mobile app overlays directional cues on the live camera feed using ARCore, while a Node.js/PostgreSQL backend provides real-time room occupancy data sourced from IoT sensors. Users can search for rooms, track capacity, and receive turn-by-turn directions without prior knowledge of the building layout. The system was tested across three GUC buildings with a 92% route-completion accuracy.",
   course: "Bachelor Project",
   isPublic: true,
   creatorId: "u1",
@@ -92,8 +93,10 @@ const [draftFile, setDraftFile] = useState(null);
   const [editLangInput, setEditLangInput] = useState("");
   const [editTagInput, setEditTagInput] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [reportText, setReportText] = useState(project.report || "");
+  const [isEditingReport, setIsEditingReport] = useState(false);
   const [invitations, setInvitations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("myInvitations") || "[]"); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(`invitations_${currentUser.email}`) || "[]"); } catch { return []; }
   });
 
   const isStudent = role === "student";
@@ -102,7 +105,7 @@ const [draftFile, setDraftFile] = useState(null);
   const isBachelorProject = project.course === "Bachelor Project";
   const isCollaborator = project.collaborators?.some(c => c.userId === currentUser.id && c.status === "accepted");
   const isProjectInstructor = project.instructors?.some(i => i.userId === currentUser.id && i.status === "accepted");
-  const canSeeComments = isCreator || isCollaborator || isProjectInstructor || isInstructor;
+  const canSeeComments = isCreator || isCollaborator || isProjectInstructor;
 
   const saveProject = (updated) => {
     setProject(updated);
@@ -170,25 +173,45 @@ const [draftFile, setDraftFile] = useState(null);
       ...(project.collaborators || []).map(c => c.userId),
       ...(project.instructors || []).map(i => i.userId),
     ];
+    const storedUsers = JSON.parse(localStorage.getItem("users") || "[]");
+    const allUsers = [
+      ...MOCK_USERS,
+      ...storedUsers.filter(u => !MOCK_USERS.some(m => m.id === u.id || m.email === u.email)),
+    ];
     setSearchResults(
-      MOCK_USERS.filter(u =>
+      allUsers.filter(u =>
         u.id !== currentUser.id &&
+        u.email !== currentUser.email &&
         !alreadyAdded.includes(u.id) &&
-        (u.email.toLowerCase().includes(lower) ||
-          u.firstName.toLowerCase().includes(lower) ||
-          u.lastName.toLowerCase().includes(lower))
+        ((u.email || "").toLowerCase().includes(lower) ||
+          (u.firstName || "").toLowerCase().includes(lower) ||
+          (u.lastName || "").toLowerCase().includes(lower))
       )
     );
   };
 
-  const sendInvitation = (user) => {
-    const entry = { userId: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, status: "pending" };
-    const updated = user.role === "instructor"
+  const sendInvitation = (invUser) => {
+    const entry = { userId: invUser.id, email: invUser.email, firstName: invUser.firstName, lastName: invUser.lastName, status: "pending" };
+    const updated = invUser.role === "instructor"
       ? { ...project, instructors: [...(project.instructors || []), entry] }
       : { ...project, collaborators: [...(project.collaborators || []), entry] };
     saveProject(updated);
-    addNotification(user.id, `You have been invited to join the project "${project.title}"`);
-    setSearchResults(prev => prev.filter(r => r.id !== user.id));
+
+    const invKey = `invitations_${invUser.email}`;
+    const existing = JSON.parse(localStorage.getItem(invKey) || "[]");
+    const inv = {
+      id: Date.now().toString(),
+      projectId: project.id,
+      projectTitle: project.title,
+      fromName: `${currentUser.firstName} ${currentUser.lastName}`,
+      role: invUser.role === "instructor" ? "instructor" : "collaborator",
+      status: "pending",
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    localStorage.setItem(invKey, JSON.stringify([...existing, inv]));
+
+    addNotification(invUser.id, `You have been invited to join the project "${project.title}"`);
+    setSearchResults(prev => prev.filter(r => r.id !== invUser.id));
   };
 
   const cancelInvitation = (userId, type) => {
@@ -292,7 +315,7 @@ const removeCollaborator = (userId) => {
   const openEditProject = () => {
     setEditForm({
       title: project.title,
-      Report: project.description,
+      description: project.description,
       course: project.course,
       githubLink: project.githubLink || "",
       demoVideo: project.demoVideo || "",
@@ -319,9 +342,38 @@ const removeCollaborator = (userId) => {
   };
 
   const handleInvitationResponse = (invId, response) => {
-    const updated = invitations.map(inv => inv.id === invId ? { ...inv, status: response } : inv);
+    const updated = invitations.map(inv => {
+      if (inv.id !== invId) return inv;
+      const stored = JSON.parse(localStorage.getItem("projects") || "[]");
+      const projIdx = stored.findIndex(p => p.id === inv.projectId);
+      if (projIdx >= 0) {
+        const proj = { ...stored[projIdx] };
+        const isInstructorRole = inv.role === "instructor";
+        if (response === "accepted") {
+          if (isInstructorRole) {
+            proj.instructors = (proj.instructors || []).map(i =>
+              i.userId === currentUser.id ? { ...i, status: "accepted" } : i
+            );
+          } else {
+            proj.collaborators = (proj.collaborators || []).map(c =>
+              c.userId === currentUser.id ? { ...c, status: "accepted" } : c
+            );
+          }
+        } else {
+          if (isInstructorRole) {
+            proj.instructors = (proj.instructors || []).filter(i => i.userId !== currentUser.id);
+          } else {
+            proj.collaborators = (proj.collaborators || []).filter(c => c.userId !== currentUser.id);
+          }
+        }
+        stored[projIdx] = proj;
+        localStorage.setItem("projects", JSON.stringify(stored));
+        if (inv.projectId === project.id) setProject(proj);
+      }
+      return { ...inv, status: response };
+    });
     setInvitations(updated);
-    localStorage.setItem("myInvitations", JSON.stringify(updated));
+    localStorage.setItem(`invitations_${currentUser.email}`, JSON.stringify(updated));
   };
 
   const sortedTasks = [...(project.tasks || [])].sort((a, b) => a.order - b.order);
@@ -396,16 +448,16 @@ const removeCollaborator = (userId) => {
                     key={s}
                     viewBox="0 0 24 24"
                     className={`h-5 w-5 transition ${(hoveredStar || project.rating || 0) >= s ? "fill-amber-400 text-amber-400" : "fill-slate-200 text-slate-200"}`}
-                    onMouseEnter={() => isInstructor && setHoveredStar(s)}
-                    onMouseLeave={() => isInstructor && setHoveredStar(0)}
-                    onClick={() => isInstructor && saveProject({ ...project, rating: s })}
-                    style={{ cursor: isInstructor ? "pointer" : "default" }}
+                    onMouseEnter={() => isProjectInstructor && setHoveredStar(s)}
+                    onMouseLeave={() => isProjectInstructor && setHoveredStar(0)}
+                    onClick={() => isProjectInstructor && saveProject({ ...project, rating: s })}
+                    style={{ cursor: isProjectInstructor ? "pointer" : "default" }}
                   >
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
                   </svg>
                 ))}
                 <span className="ml-1 text-sm text-slate-500">{project.rating ? `${project.rating}/5` : "No rating"}</span>
-                {isInstructor && <span className="ml-1 text-xs text-slate-400">(click to rate)</span>}
+                {isProjectInstructor && <span className="ml-1 text-xs text-slate-400">(click to rate)</span>}
               </div>
 
               {/* Visibility toggle — creator student only */}
@@ -431,13 +483,13 @@ const removeCollaborator = (userId) => {
                 </>
               )}
 
-              {/* Flag / unflag — instructor & admin */}
-              {(isInstructor || role === "admin") && !project.flagged && (
+              {/* Flag / unflag — assigned instructor & admin only */}
+              {(isProjectInstructor || role === "admin") && !project.flagged && (
                 <button onClick={() => setShowFlagModal(true)} className="rounded-full bg-red-50 px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100">
                   Flag Project
                 </button>
               )}
-              {(isInstructor || role === "admin") && project.flagged && (
+              {(isProjectInstructor || role === "admin") && project.flagged && (
                 <button onClick={() => saveProject({ ...project, flagged: false, flagReason: "", appeal: "" })} className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-200">
                   Remove Flag
                 </button>
@@ -539,12 +591,51 @@ const removeCollaborator = (userId) => {
               )}
             </div>
 
-            {/* Instructor feedback — visible to project members */}
-            {(canSeeComments || isInstructor) && (
+            {/* Project Report */}
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">Project Report</h2>
+                {(isCreator || (isCollaborator && isStudent)) && !isEditingReport && (
+                  <button
+                    onClick={() => { setReportText(project.report || ""); setIsEditingReport(true); }}
+                    className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-200"
+                  >
+                    {project.report ? "Edit" : "Write Report"}
+                  </button>
+                )}
+              </div>
+              {isEditingReport ? (
+                <>
+                  <textarea
+                    value={reportText}
+                    onChange={e => setReportText(e.target.value)}
+                    rows={8}
+                    placeholder="Write a detailed project report — methodology, results, technical decisions..."
+                    className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button onClick={() => setIsEditingReport(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+                    <button
+                      onClick={() => { saveProject({ ...project, report: reportText }); setIsEditingReport(false); }}
+                      className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                    >
+                      Save Report
+                    </button>
+                  </div>
+                </>
+              ) : project.report ? (
+                <p className="whitespace-pre-wrap leading-relaxed text-slate-700">{project.report}</p>
+              ) : (
+                <p className="text-sm italic text-slate-400">No report written yet.</p>
+              )}
+            </div>
+
+            {/* Instructor feedback — visible to creator, collaborators, assigned instructors only */}
+            {canSeeComments && (
               <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="text-lg font-semibold text-slate-900">Instructor Feedback</h2>
-                  {isInstructor && (
+                  {isProjectInstructor && (
                     <div className="flex gap-2">
                       <button onClick={() => openComment("project", "general", project.instructorFeedback)} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100">
                         {project.instructorFeedback ? "Edit" : "Add Feedback"}
@@ -632,7 +723,7 @@ const removeCollaborator = (userId) => {
                       </>
                     )}
 
-                    {isInstructor && (
+                    {isProjectInstructor && (
                       <div className="flex gap-1">
                         <button onClick={() => openComment("task", task.id, task.instructorComment)} className="rounded-xl bg-emerald-50 px-3 py-1 text-xs text-emerald-700 transition hover:bg-emerald-100">
                           {task.instructorComment ? "Edit Comment" : "Comment"}
@@ -793,7 +884,7 @@ const removeCollaborator = (userId) => {
                         Set as Final
                       </button>
                     )}
-                    {isInstructor && (
+                    {isProjectInstructor && (
                       <>
                         <button onClick={() => openComment("draft", draft.id, draft.instructorComment)} className="rounded-xl bg-emerald-50 px-3 py-1 text-xs text-emerald-700 transition hover:bg-emerald-100">
                           {draft.instructorComment ? "Edit Comment" : "Comment"}

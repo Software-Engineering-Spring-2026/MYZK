@@ -70,6 +70,18 @@ const Profile = () => {
     return all.filter(p => p.creatorId === user.email);
   });
 
+  // Auto-detected: employer-accepted + deadline passed
+  const autoCompletedInternships = (() => {
+    const empInternships = JSON.parse(localStorage.getItem('employerInternships')) || [];
+    const statuses = JSON.parse(localStorage.getItem('applicantStatuses')) || {};
+    const today = new Date();
+    return empInternships.filter(i => {
+      const expired = i.deadline && today > new Date(i.deadline);
+      const accepted = statuses[`${i.id}_${user.email}`] === 'accepted';
+      return expired && accepted;
+    });
+  })();
+
   const [showProjectEditModal, setShowProjectEditModal] = useState(false);
   const [projectEditForm, setProjectEditForm] = useState(null);
   const [projectEditLangInput, setProjectEditLangInput] = useState('');
@@ -719,7 +731,7 @@ const Profile = () => {
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Internships</p>
-                  <p className="text-4xl font-bold text-emerald-600">{completedInternships.length}</p>
+                  <p className="text-4xl font-bold text-emerald-600">{completedInternships.length + autoCompletedInternships.length}</p>
                   <p className="mt-1 text-xs text-slate-400">completed</p>
                 </div>
               </div>
@@ -785,12 +797,43 @@ const Profile = () => {
             {/* COMPLETED INTERNSHIPS */}
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
               <h3 className="mb-5 text-xl font-bold text-slate-900">Completed Internships</h3>
+
+              {/* Platform-verified (auto) */}
+              {autoCompletedInternships.length > 0 && (
+                <div className="mb-6">
+                  <div className="mb-3 flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Platform Verified</span>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">{autoCompletedInternships.length}</span>
+                  </div>
+                  <div className="space-y-2">
+                    {autoCompletedInternships.map((i) => (
+                      <div key={i.id} className="flex items-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold text-slate-900">{i.title}</p>
+                          <p className="text-xs text-slate-500">{i.company} · {i.duration} · Deadline: {i.deadline}</p>
+                        </div>
+                        <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-xs font-semibold text-white">Completed</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Manually added */}
+              {autoCompletedInternships.length > 0 && (
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Added Manually</p>
+              )}
               <div className="mb-4 flex gap-2">
                 <input
                   value={newInternship}
                   onChange={e => setNewInternship(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') addInternship(); }}
-                  placeholder="e.g. Frontend Intern @ Google"
+                  placeholder="e.g. Frontend Intern @ Google (external)"
                   className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
                 />
                 <button onClick={addInternship} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
@@ -806,7 +849,9 @@ const Profile = () => {
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-sm italic text-slate-400">No internships added yet.</p>}
+              ) : autoCompletedInternships.length === 0 ? (
+                <p className="text-sm italic text-slate-400">No internships yet. Complete an internship through the platform or add one manually.</p>
+              ) : null}
             </div>
 
           </div>

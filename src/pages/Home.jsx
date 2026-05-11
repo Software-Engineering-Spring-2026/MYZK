@@ -67,6 +67,8 @@ const Home = () => {
   const [internshipSearch, setInternshipSearch] = useState('');
   const [internshipDateFilter, setInternshipDateFilter] = useState('');
   const [internshipDurationFilter, setInternshipDurationFilter] = useState('');
+  const [showInternshipFilter, setShowInternshipFilter] = useState(false);
+  const [internshipCompanyFilter, setInternshipCompanyFilter] = useState('');
 const [showApplySuccess, setShowApplySuccess] = useState(false);
 const [showCoverLetterModal, setShowCoverLetterModal] = useState(false);
 const [selectedInternship, setSelectedInternship] = useState(null);
@@ -81,6 +83,11 @@ const [editingInternship, setEditingInternship] = useState(null);
 const [employerInternships, setEmployerInternships] = useState(
   JSON.parse(localStorage.getItem('employerInternships')) || []
 );
+const [selectedInternshipForApplicants, setSelectedInternshipForApplicants] = useState(null);
+const [applicantStatuses, setApplicantStatuses] = useState(
+  JSON.parse(localStorage.getItem('applicantStatuses')) || {}
+);
+const [applicantSortByContributors, setApplicantSortByContributors] = useState(false);
 
 const [internshipForm, setInternshipForm] = useState({
   title: '',
@@ -109,68 +116,68 @@ const [internshipForm, setInternshipForm] = useState({
   // ---------------- MOCK INTERNSHIPS ----------------
 const mockInternships = [
   {
-    id: 1,
-    title: 'Frontend Developer Intern',
-    company: 'Google',
-    location: 'Cairo',
-    duration: '3 Months',
-    postedDate: '2026-05-01',
+    id: 1, title: 'Frontend Developer Intern', company: 'Google', location: 'Cairo',
+    duration: '3 Months', postedDate: '2026-05-01', deadline: '2026-06-30',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Build and maintain UI components, collaborate with designers, write clean reusable React code, participate in code reviews.',
+    skills: 'React, JavaScript, CSS, HTML, Git',
+    languages: 'JavaScript, TypeScript',
   },
   {
-    id: 2,
-    title: 'Backend Engineer Intern',
-    company: 'Microsoft',
-    location: 'Smart Village',
-    duration: '6 Months',
-    postedDate: '2026-05-12',
+    id: 2, title: 'Backend Engineer Intern', company: 'Microsoft', location: 'Smart Village',
+    duration: '6 Months', postedDate: '2026-05-12', deadline: '2026-07-31',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Develop and optimize RESTful APIs, work with Azure cloud services, assist in database design and query optimization.',
+    skills: 'Node.js, REST APIs, SQL, Azure, Git',
+    languages: 'Python, C#, JavaScript',
   },
   {
-    id: 3,
-    title: 'Software Engineering Intern',
-    company: 'Amazon',
-    location: 'Remote',
-    duration: '2 Months',
-    postedDate: '2026-04-22',
+    id: 3, title: 'Software Engineering Intern', company: 'Amazon', location: 'Remote',
+    duration: '2 Months', postedDate: '2026-04-22', deadline: '2026-04-30',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Assist in developing scalable software systems, write unit tests, document code, and contribute to design discussions.',
+    skills: 'Java, Data Structures, Algorithms, Git',
+    languages: 'Java, Python',
   },
   {
-    id: 4,
-    title: 'AI/ML Intern',
-    company: 'OpenAI',
-    location: 'Remote',
-    duration: '4 Months',
-    postedDate: '2026-05-18',
+    id: 4, title: 'AI/ML Intern', company: 'OpenAI', location: 'Remote',
+    duration: '4 Months', postedDate: '2026-05-18', deadline: '2026-08-15',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Research and implement machine learning models, analyze datasets, write reports on model performance and improvements.',
+    skills: 'Python, TensorFlow, PyTorch, Statistics',
+    languages: 'Python',
   },
   {
-    id: 5,
-    title: 'Full Stack Intern',
-    company: 'Vodafone',
-    location: 'New Cairo',
-    duration: '6 Months',
-    postedDate: '2026-03-30',
+    id: 5, title: 'Full Stack Intern', company: 'Vodafone', location: 'New Cairo',
+    duration: '6 Months', postedDate: '2026-03-30', deadline: '2026-04-01',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Develop end-to-end web features, integrate backend services with React frontend, maintain existing codebases.',
+    skills: 'React, Node.js, MongoDB, REST APIs',
+    languages: 'JavaScript, TypeScript',
   },
   {
-    id: 6,
-    title: 'Mobile Developer Intern',
-    company: 'Instabug',
-    location: 'Cairo',
-    duration: '3 Months',
-    postedDate: '2026-04-10',
+    id: 6, title: 'Mobile Developer Intern', company: 'Instabug', location: 'Cairo',
+    duration: '3 Months', postedDate: '2026-04-10', deadline: '2026-05-01',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Develop cross-platform mobile features using Flutter, fix UI/UX bugs, write unit tests for mobile components.',
+    skills: 'Flutter, Dart, Firebase, Mobile UI',
+    languages: 'Dart',
   },
   {
-    id: 7,
-    title: 'Cyber Security Intern',
-    company: 'Orange',
-    location: '6th October',
-    duration: '5 Months',
-    postedDate: '2026-05-20',
+    id: 7, title: 'Cyber Security Intern', company: 'Orange', location: '6th October',
+    duration: '5 Months', postedDate: '2026-05-20', deadline: '2026-09-01',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Perform vulnerability assessments, monitor network traffic, assist in security incident response and reporting.',
+    skills: 'Network Security, Linux, Penetration Testing, SIEM',
+    languages: 'Python, Bash',
   },
   {
-    id: 8,
-    title: 'Cloud Engineer Intern',
-    company: 'IBM',
-    location: 'Smart Village',
-    duration: '2 Months',
-    postedDate: '2026-02-15',
+    id: 8, title: 'Cloud Engineer Intern', company: 'IBM', location: 'Smart Village',
+    duration: '2 Months', postedDate: '2026-02-15', deadline: '2026-03-31',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Deploy and manage cloud infrastructure on IBM Cloud, automate CI/CD pipelines, monitor system health and performance.',
+    skills: 'Cloud Computing, Docker, Kubernetes, CI/CD',
+    languages: 'Python, YAML, Bash',
   },
 ];
 
@@ -190,6 +197,11 @@ const filteredInternships = [...allInternships]
     (i) =>
       internshipDurationFilter === '' ||
       i.duration === internshipDurationFilter
+  )
+  .filter(
+    (i) =>
+      internshipCompanyFilter === '' ||
+      (i.company || '').toLowerCase().includes(internshipCompanyFilter.toLowerCase())
   )
   .sort((a, b) =>
     internshipSort === 'newest'
@@ -289,18 +301,58 @@ const filteredProjects = allProjects.filter((p) => {
     className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
   />
 
-  <select
-    value={internshipDurationFilter}
-    onChange={(e) => setInternshipDurationFilter(e.target.value)}
-    className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-  >
-    <option value="">All Durations</option>
-    <option value="2 Months">2 Months</option>
-    <option value="3 Months">3 Months</option>
-    <option value="4 Months">4 Months</option>
-    <option value="5 Months">5 Months</option>
-    <option value="6 Months">6 Months</option>
-  </select>
+  <div className="relative" onMouseLeave={() => setShowInternshipFilter(false)}>
+    <button
+      onMouseEnter={() => setShowInternshipFilter(true)}
+      className={`flex min-w-[140px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${(internshipCompanyFilter || internshipDurationFilter) ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : showInternshipFilter ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+      </svg>
+      <span>
+        Filter{(internshipCompanyFilter || internshipDurationFilter) ? ` (${[internshipCompanyFilter && 'Company', internshipDurationFilter && 'Duration'].filter(Boolean).length})` : ''}
+      </span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+        <polyline points="6 9 12 15 18 9" />
+      </svg>
+    </button>
+    {showInternshipFilter && (
+      <>
+        <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
+        <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Company</p>
+          <input
+            type="text"
+            value={internshipCompanyFilter}
+            onChange={(e) => setInternshipCompanyFilter(e.target.value)}
+            placeholder="e.g. Google"
+            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+          />
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Duration</p>
+          <div className="flex flex-col gap-1">
+            {['', '2 Months', '3 Months', '4 Months', '5 Months', '6 Months'].map((d) => (
+              <button
+                key={d}
+                onClick={() => setInternshipDurationFilter(d)}
+                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition hover:bg-slate-50 ${internshipDurationFilter === d ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
+              >
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${internshipDurationFilter === d ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                {d || 'All Durations'}
+              </button>
+            ))}
+          </div>
+          {(internshipCompanyFilter || internshipDurationFilter) && (
+            <button
+              onClick={() => { setInternshipCompanyFilter(''); setInternshipDurationFilter(''); }}
+              className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+            >
+              Clear Filters
+            </button>
+          )}
+        </div>
+      </>
+    )}
+  </div>
 
           <div className="relative" onMouseEnter={() => setShowInternshipSort(true)} onMouseLeave={() => setShowInternshipSort(false)}>
             <button
@@ -340,56 +392,68 @@ const filteredProjects = allProjects.filter((p) => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredInternships.length > 0 ? filteredInternships.map((internship) => (
             <div key={internship.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-              <div className="flex items-start justify-between gap-4">
-                <div>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
                   <p className="font-semibold text-slate-900">{internship.title}</p>
-                  <p className="mt-1 text-sm font-medium text-emerald-600">{internship.company}</p>
-                  <p className="mt-1 text-xs text-slate-400">{internship.location}</p>
-                  <p className="mt-1 text-xs font-medium text-amber-600">
-  Duration: {internship.duration}
-</p>
-
-{internship.status && (
-  <p
-    className={`mt-1 text-xs font-semibold ${
-      internship.status === 'Currently Hiring'
-        ? 'text-emerald-600'
-        : 'text-red-500'
-    }`}
-  >
-    {internship.status}
-  </p>
-)}
-
-
-                  <p className="mt-1 text-xs text-slate-400">Posted: {internship.postedDate}</p>
+                  <p className="mt-0.5 text-sm font-medium text-emerald-600">{internship.company}</p>
                 </div>
-  <button
-  disabled={
-    appliedInternships.includes(internship.id) ||
-    internship.status === 'Position Filled'
-  }
-  onClick={() => {
-    if (internship.status === 'Position Filled')
-      return;
-
-    setSelectedInternship(internship);
-    setShowCoverLetterModal(true);
-  }}
-  className={`rounded-full px-4 py-1.5 text-xs font-semibold shadow transition ${
-    appliedInternships.includes(internship.id)
-      ? 'cursor-not-allowed bg-slate-300 text-white'
-      : internship.status === 'Position Filled'
-      ? 'cursor-not-allowed bg-red-200 text-red-700'
-      : 'bg-emerald-600 text-white hover:bg-emerald-500'
-  }`}
->
-  {appliedInternships.includes(internship.id)
-    ? 'Applied'
-    : internship.status === 'Position Filled'
-    ? 'Position Filled'
-    : 'Apply'}
-</button>
+                {internship.status && (() => {
+                  const expired = internship.deadline && new Date() > new Date(internship.deadline) && internship.status === 'Currently Hiring';
+                  return (
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${expired ? 'bg-slate-200 text-slate-600' : internship.status === 'Currently Hiring' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                      {expired ? 'Internship Expired' : internship.status}
+                    </span>
+                  );
+                })()}
+              </div>
+              {/* Badges */}
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {internship.location && <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-600">{internship.location}</span>}
+                <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-700">{internship.duration}</span>
+              </div>
+              {/* Deadline */}
+              {internship.deadline && (() => {
+                const passed = new Date() > new Date(internship.deadline);
+                return <p className={`mt-2 text-xs font-semibold ${passed ? 'text-red-500' : 'text-slate-500'}`}>{passed ? 'Deadline passed: ' : 'Apply by: '}{internship.deadline}</p>;
+              })()}
+              {/* Responsibilities */}
+              {internship.responsibilities && (
+                <p className="mt-3 text-xs leading-relaxed text-slate-500 line-clamp-2">{internship.responsibilities}</p>
+              )}
+              {/* Skills & Languages */}
+              {internship.skills && (
+                <div className="mt-2.5">
+                  <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">Skills</p>
+                  <p className="text-xs text-slate-600">{internship.skills}</p>
+                </div>
+              )}
+              {internship.languages && (
+                <p className="mt-1.5 text-xs text-slate-400">Languages: {internship.languages}</p>
+              )}
+              {/* Footer */}
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-xs text-slate-300">Posted: {internship.postedDate}</p>
+                {(() => {
+                  const deadlinePassed = internship.deadline && new Date() > new Date(internship.deadline);
+                  const alreadyApplied = appliedInternships.includes(internship.id);
+                  const positionFilled = internship.status === 'Position Filled';
+                  const blocked = alreadyApplied || positionFilled || deadlinePassed;
+                  return (
+                    <button
+                      disabled={blocked}
+                      onClick={() => { if (blocked) return; setSelectedInternship(internship); setShowCoverLetterModal(true); }}
+                      className={`rounded-full px-4 py-1.5 text-xs font-semibold shadow transition ${
+                        alreadyApplied ? 'cursor-not-allowed bg-slate-300 text-white'
+                        : positionFilled ? 'cursor-not-allowed bg-red-200 text-red-700'
+                        : deadlinePassed ? 'cursor-not-allowed bg-slate-200 text-slate-400'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                      }`}
+                    >
+                      {alreadyApplied ? 'Applied' : positionFilled ? 'Position Filled' : deadlinePassed ? 'Deadline Passed' : 'Apply'}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           )) : (
@@ -558,6 +622,8 @@ const filteredProjects = allProjects.filter((p) => {
       {
   id: Date.now(),
   ...internshipForm,
+  company: user.companyName || user.firstName || '',
+  postedDate: new Date().toISOString().split('T')[0],
   status: 'Currently Hiring',
   archived: false,
 },
@@ -595,8 +661,14 @@ const deleteInternship = (id) => {
     'employerInternships',
     JSON.stringify(updated)
   );
-}; 
+};
 
+const updateApplicantStatus = (internshipId, studentEmail, status) => {
+  const key = `${internshipId}_${studentEmail}`;
+  const updated = { ...applicantStatuses, [key]: status };
+  setApplicantStatuses(updated);
+  localStorage.setItem('applicantStatuses', JSON.stringify(updated));
+};
 
   const EmployerDashboard = () => {
     const recommendedProjects = [
@@ -605,6 +677,42 @@ const deleteInternship = (id) => {
       { id: 3, title: 'Campus Navigation App', field: 'Mobile Development', companyFit: 'Strong mobile UI/UX implementation', rating: 4 },
       { id: 4, title: 'Cyber Security Threat Detector', field: 'Cyber Security', companyFit: 'Relevant for enterprise security', rating: 5 },
     ];
+    const allEmpUsers = JSON.parse(localStorage.getItem('users')) || [];
+    const allEmpProjects = JSON.parse(localStorage.getItem('projects')) || [];
+    const totalInternshipsOffered = employerInternships.length;
+    const totalAccepted = Object.values(applicantStatuses).filter(s => s === 'accepted').length;
+    const completedInternshipsCount = (() => {
+      let count = 0;
+      employerInternships.forEach(i => {
+        if (!i.deadline || new Date() <= new Date(i.deadline)) return;
+        allEmpUsers.forEach(u => {
+          if (applicantStatuses[`${i.id}_${u.email}`] === 'accepted') count++;
+        });
+      });
+      return count;
+    })();
+    const getApplicantsForInternship = (internshipId) =>
+      allEmpUsers.filter(u => {
+        const applied = JSON.parse(localStorage.getItem(`appliedInternships_${u.email}`)) || [];
+        return applied.includes(internshipId);
+      }).map(u => ({
+        ...u,
+        projectCount: allEmpProjects.filter(p => p.creatorId === u.email || p.creatorId === u.id).length,
+        coverLetter: localStorage.getItem(`coverLetter_${u.email}_${internshipId}`) || '',
+      }));
+    const favoritedEmails = favorites.filter(f => f.type === 'portfolio').map(f => f.email);
+    const suggestedApplicants = allEmpUsers
+      .filter(u => favoritedEmails.includes(u.email))
+      .map(u => ({
+        ...u,
+        projectCount: allEmpProjects.filter(p => p.creatorId === u.email || p.creatorId === u.id).length,
+        hasApplied: employerInternships.some(i => {
+          const applied = JSON.parse(localStorage.getItem(`appliedInternships_${u.email}`)) || [];
+          return applied.includes(i.id);
+        }),
+      }))
+      .filter(u => u.hasApplied)
+      .sort((a, b) => b.projectCount - a.projectCount);
     return (
       <div className="space-y-6">
         {/* EMPLOYER HEADER CARD */}
@@ -634,6 +742,24 @@ const deleteInternship = (id) => {
 >
   + Add Internship
 </button>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+          <h2 className="mb-4 text-lg font-semibold text-slate-900">Company Statistics</h2>
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-[140px] flex-1 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-center">
+              <p className="text-3xl font-bold text-emerald-600">{totalInternshipsOffered}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">Internships Offered</p>
+            </div>
+            <div className="min-w-[140px] flex-1 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-center">
+              <p className="text-3xl font-bold text-emerald-600">{totalAccepted}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">Students Accepted</p>
+            </div>
+            <div className="min-w-[140px] flex-1 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-center">
+              <p className="text-3xl font-bold text-amber-500">{completedInternshipsCount}</p>
+              <p className="mt-1 text-xs font-semibold text-slate-500">Completed by Students</p>
+            </div>
           </div>
         </div>
 
@@ -684,16 +810,15 @@ const deleteInternship = (id) => {
                 </h3>
 
                 <div className="mt-2 flex flex-wrap gap-2">
-  <span
-    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-      internship.status === 'Currently Hiring'
-        ? 'bg-emerald-100 text-emerald-700'
-        : 'bg-red-100 text-red-700'
-    }`}
-  >
-    {internship.status}
-  </span>
-
+  {(() => {
+    const expired = internship.deadline && new Date() > new Date(internship.deadline) && internship.status === 'Currently Hiring';
+    const label = expired ? 'Internship Expired' : internship.status;
+    return (
+      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${expired ? 'bg-slate-200 text-slate-600' : internship.status === 'Currently Hiring' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+        {label}
+      </span>
+    );
+  })()}
   {internship.archived && (
     <span className="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700">
       Archived
@@ -725,6 +850,14 @@ const deleteInternship = (id) => {
               </div>
 
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setSelectedInternshipForApplicants(
+                    selectedInternshipForApplicants?.id === internship.id ? null : internship
+                  )}
+                  className={`rounded-full px-4 py-2 text-xs font-semibold transition ${selectedInternshipForApplicants?.id === internship.id ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                >
+                  View Applicants
+                </button>
                 <button
                   onClick={() => {
                     const updated = employerInternships.map((i) =>
@@ -762,9 +895,9 @@ const deleteInternship = (id) => {
                     const today = new Date();
                     const deadline = new Date(internship.deadline);
 
-                    if (deadline > today) {
+                    if (!internship.archived && deadline > today) {
                       alert(
-                        'Internship can only be archived after deadline passes.'
+                        'Internship can only be archived after the application deadline passes.'
                       );
                       return;
                     }
@@ -826,123 +959,120 @@ const deleteInternship = (id) => {
           </div>
         ))}
       </div>
+      {selectedInternshipForApplicants && (() => {
+        const applicants = getApplicantsForInternship(selectedInternshipForApplicants.id);
+        const sorted = applicantSortByContributors
+          ? [...applicants].sort((a, b) => b.projectCount - a.projectCount)
+          : applicants;
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" style={{maxHeight: '80vh'}}>
+              <div className="flex shrink-0 items-center justify-between bg-emerald-600 px-6 py-4 text-white">
+                <div>
+                  <h3 className="font-semibold">Applicants</h3>
+                  <p className="mt-0.5 text-xs text-emerald-100">{selectedInternshipForApplicants.title} · {applicants.length} applicant{applicants.length !== 1 ? 's' : ''}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setApplicantSortByContributors(prev => !prev)}
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold tracking-wide transition ${applicantSortByContributors ? 'bg-amber-400 text-amber-900 shadow-md shadow-amber-600/30' : 'bg-white/15 text-white ring-1 ring-white/30 hover:bg-white/25'}`}
+                  >
+                    <svg viewBox="0 0 24 24" fill={applicantSortByContributors ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5 shrink-0">
+                      <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" /><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" /><path d="M4 22h16" /><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" /><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" /><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+                    </svg>
+                    Top Contributors
+                  </button>
+                  <button onClick={() => setSelectedInternshipForApplicants(null)} className="text-white/70 transition hover:text-white">✕</button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-5">
+                {sorted.length === 0 ? (
+                  <p className="py-8 text-center text-sm italic text-slate-400">No applicants yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {sorted.map((applicant, idx) => {
+                      const statusKey = `${selectedInternshipForApplicants.id}_${applicant.email}`;
+                      const currentStatus = applicantStatuses[statusKey] || 'pending';
+                      return (
+                        <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-700">
+                                  {applicant.firstName?.[0]}{applicant.lastName?.[0]}
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-slate-900">{applicant.firstName} {applicant.lastName}</p>
+                                  <p className="text-xs text-slate-400">{applicant.email}</p>
+                                </div>
+                              </div>
+                              {applicant.coverLetter && (
+                                <div className="mt-3 rounded-xl bg-slate-50 px-3 py-2">
+                                  <p className="mb-1 text-xs font-semibold text-slate-400">Cover Letter</p>
+                                  <p className="text-sm text-slate-600">{applicant.coverLetter}</p>
+                                </div>
+                              )}
+                              <p className="mt-2 text-xs text-slate-400">{applicant.projectCount} project{applicant.projectCount !== 1 ? 's' : ''} contributed</p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {['nominated', 'accepted', 'rejected'].map(s => (
+                                <button
+                                  key={s}
+                                  onClick={() => updateApplicantStatus(selectedInternshipForApplicants.id, applicant.email, currentStatus === s ? 'pending' : s)}
+                                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
+                                    currentStatus === s
+                                      ? s === 'accepted' ? 'bg-emerald-600 text-white'
+                                        : s === 'nominated' ? 'bg-amber-500 text-white'
+                                        : 'bg-red-500 text-white'
+                                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                  }`}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </>
   )}
 </div>
 
-
-{showInternshipModal && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-    <div className="w-full max-w-2xl rounded-3xl bg-white p-8 shadow-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-slate-900">
-          {editingInternship
-            ? 'Edit Internship'
-            : 'Add Internship'}
-        </h2>
-
-        <button
-          onClick={() => setShowInternshipModal(false)}
-          className="text-2xl text-slate-400 transition hover:text-slate-600"
-        >
-          ×
-        </button>
+{suggestedApplicants.length > 0 && (
+  <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+    <div className="mb-4 flex items-center justify-between">
+      <div>
+        <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">From Your Saved Portfolios</span>
+        <h2 className="mt-0.5 text-xl font-semibold text-slate-900">Suggested Applicants</h2>
       </div>
-
-      <div className="grid grid-cols-1 gap-4">
-        <input
-          type="text"
-          placeholder="Internship Title"
-          value={internshipForm.title}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              title: e.target.value,
-            })
-          }
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-
-        <textarea
-          placeholder="Responsibilities"
-          defaultValue={internshipForm.responsibilities}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              responsibilities: e.target.value,
-            })
-          }
-          rows={4}
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-
-        <input
-          type="text"
-          placeholder="Required Skills"
-          value={internshipForm.skills}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              skills: e.target.value,
-            })
-          }
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-
-        <input
-          type="text"
-          placeholder="Duration"
-          value={internshipForm.duration}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              duration: e.target.value,
-            })
-          }
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-
-        <input
-          type="date"
-          value={internshipForm.deadline}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              deadline: e.target.value,
-            })
-          }
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-
-        <input
-          type="text"
-          placeholder="Programming Languages"
-          value={internshipForm.languages}
-          onChange={(e) =>
-            setInternshipForm({
-              ...internshipForm,
-              languages: e.target.value,
-            })
-          }
-          className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-        />
-      </div>
-
-      <div className="mt-8 flex justify-end gap-3">
-        <button
-          onClick={() => setShowInternshipModal(false)}
-          className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
-        >
-          Cancel
-        </button>
-
-        <button
-          onClick={saveInternship}
-          className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
-        >
-          Save
-        </button>
-      </div>
+      <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Favorited & Applied</span>
+    </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {suggestedApplicants.map((s, idx) => (
+        <div key={idx} className="rounded-2xl border border-slate-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-700">
+              {s.firstName?.[0]}{s.lastName?.[0]}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-slate-900">{s.firstName} {s.lastName}</p>
+              <p className="truncate text-xs text-slate-400">{s.email}</p>
+            </div>
+          </div>
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-xs text-slate-400">{s.projectCount} project{s.projectCount !== 1 ? 's' : ''}</span>
+            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Applied</span>
+          </div>
+        </div>
+      ))}
     </div>
   </div>
 )}
@@ -1364,10 +1494,89 @@ const deleteInternship = (id) => {
 
         {/* ROLE DASHBOARD */}
         <main>
-          {user.role === 'student' && <StudentDashboard />}
-          {user.role === 'instructor' && <InstructorDashboard />}
-          {user.role === 'employer' && <EmployerDashboard />}
+          {user.role === 'student' && StudentDashboard()}
+          {user.role === 'instructor' && InstructorDashboard()}
+          {user.role === 'employer' && EmployerDashboard()}
         </main>
+
+        {showInternshipModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 shadow-2xl">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-2xl font-bold text-slate-900">
+                  {editingInternship ? 'Edit Internship' : 'Add Internship'}
+                </h2>
+                <button
+                  onClick={() => setShowInternshipModal(false)}
+                  className="text-2xl text-slate-400 transition hover:text-slate-600"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <input
+                  type="text"
+                  placeholder="Internship Title"
+                  value={internshipForm.title}
+                  onChange={(e) => setInternshipForm({ ...internshipForm, title: e.target.value })}
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+                <textarea
+                  placeholder="Responsibilities"
+                  value={internshipForm.responsibilities}
+                  onChange={(e) => setInternshipForm({ ...internshipForm, responsibilities: e.target.value })}
+                  rows={4}
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+                <input
+                  type="text"
+                  placeholder="Required Skills"
+                  value={internshipForm.skills}
+                  onChange={(e) => setInternshipForm({ ...internshipForm, skills: e.target.value })}
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+                <input
+                  type="text"
+                  placeholder="Duration"
+                  value={internshipForm.duration}
+                  onChange={(e) => setInternshipForm({ ...internshipForm, duration: e.target.value })}
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Application Deadline</label>
+                  <input
+                    type="date"
+                    value={internshipForm.deadline}
+                    onChange={(e) => setInternshipForm({ ...internshipForm, deadline: e.target.value })}
+                    className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                  />
+                  <p className="mt-1 text-xs text-slate-400">Students cannot apply after this date. Archiving is only allowed once the deadline has passed.</p>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Programming Languages"
+                  value={internshipForm.languages}
+                  onChange={(e) => setInternshipForm({ ...internshipForm, languages: e.target.value })}
+                  className="rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                />
+              </div>
+              <div className="mt-8 flex justify-end gap-3">
+                <button
+                  onClick={() => setShowInternshipModal(false)}
+                  className="rounded-full border border-slate-200 px-5 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={saveInternship}
+                  className="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>
