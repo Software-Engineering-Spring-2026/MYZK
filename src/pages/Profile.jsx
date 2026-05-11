@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import PageHeader from '../components/PageHeader';
 
 const COURSES = [
   'Bachelor Project','Software Engineering','Operating Systems','Machine Learning',
@@ -27,18 +28,40 @@ const Profile = () => {
     const viewedMajor = localStorage.getItem(`major_${viewEmail}`) || viewed?.major || '';
     const viewedLinkedIn = localStorage.getItem(`linkedin_${viewEmail}`) || '';
     const viewedBio = localStorage.getItem(`bio_${viewEmail}`) || '';
+    const viewedFavorites = JSON.parse(localStorage.getItem(`favorites_${viewEmail}`)) || [];
+    const viewedInternships = JSON.parse(localStorage.getItem(`internships_${viewEmail}`)) || [];
     const displayName = viewed ? `${viewed.firstName} ${viewed.lastName}` : viewEmail;
+
+    const viewedLangCounts = (() => {
+      const all = viewedProjects.flatMap(p => p.languages || []);
+      const counts = {};
+      all.forEach(l => { counts[l] = (counts[l] || 0) + 1; });
+      return { sorted: Object.entries(counts).sort((a, b) => b[1] - a[1]), total: all.length };
+    })();
+
+    const viewedTopCollabs = (() => {
+      const map = {};
+      viewedProjects.forEach(p => {
+        (p.collaborators || []).filter(c => c.status === 'accepted').forEach(c => {
+          if (!map[c.email]) map[c.email] = { email: c.email, name: c.name || c.email, count: 0 };
+          map[c.email].count++;
+        });
+      });
+      return Object.values(map).sort((a, b) => b.count - a.count).slice(0, 5);
+    })();
+
+    const langColors = ['bg-emerald-500','bg-blue-500','bg-violet-500','bg-amber-500','bg-rose-500','bg-cyan-500'];
+
     return (
       <div className="min-h-screen bg-[#f7f4ee] text-slate-900 antialiased">
         <div className="pointer-events-none fixed inset-0 z-0">
           <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-200/70 blur-3xl" />
           <div className="absolute right-[-6%] top-20 h-[360px] w-[360px] rounded-full bg-emerald-200/60 blur-3xl" />
         </div>
-        <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6">
-          <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
-            Back
-          </button>
+        <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6 space-y-6">
+          <PageHeader showBack={true} />
+
+          {/* PROFILE CARD */}
           <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-3xl font-bold text-emerald-700">
@@ -50,7 +73,7 @@ const Profile = () => {
                 {viewedMajor && <p className="mt-1 text-sm font-medium text-emerald-600">{viewedMajor}</p>}
                 {viewedBio && <p className="mt-3 leading-relaxed text-slate-600">{viewedBio}</p>}
                 {viewedLinkedIn && (
-                  <a href={viewedLinkedIn} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:underline">
+                  <a href={viewedLinkedIn.startsWith('http') ? viewedLinkedIn : `https://${viewedLinkedIn}`} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:underline">
                     LinkedIn Profile →
                   </a>
                 )}
@@ -67,7 +90,9 @@ const Profile = () => {
               </div>
             )}
           </div>
-          <div className="mt-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+
+          {/* PROJECTS */}
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
             <h2 className="mb-4 text-lg font-semibold text-slate-900">Projects ({viewedProjects.length})</h2>
             {viewedProjects.length === 0 ? (
               <p className="text-sm italic text-slate-400">No public projects.</p>
@@ -88,6 +113,117 @@ const Profile = () => {
               </div>
             )}
           </div>
+
+          {/* PORTFOLIO STATISTICS */}
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+            <h2 className="mb-5 text-lg font-semibold text-slate-900">Portfolio Statistics</h2>
+            <div className="grid gap-4 sm:grid-cols-3 mb-5">
+              <div className="rounded-2xl bg-slate-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Projects</p>
+                <p className="mt-1 text-3xl font-bold text-emerald-600">{viewedProjects.length}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Skills</p>
+                <p className="mt-1 text-3xl font-bold text-emerald-600">{viewedSkills.length}</p>
+              </div>
+              <div className="rounded-2xl bg-slate-50 p-4 text-center">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Internships</p>
+                <p className="mt-1 text-3xl font-bold text-emerald-600">{viewedInternships.length}</p>
+              </div>
+            </div>
+            {viewedLangCounts.total > 0 ? (
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-slate-400">Languages Used</p>
+                <div className="space-y-2.5">
+                  {viewedLangCounts.sorted.map(([lang, count], i) => {
+                    const pct = Math.round((count / viewedLangCounts.total) * 100);
+                    return (
+                      <div key={lang}>
+                        <div className="mb-1 flex items-center justify-between text-xs">
+                          <span className="font-medium text-slate-700">{lang}</span>
+                          <span className="text-slate-400">{pct}% ({count})</span>
+                        </div>
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div className={`h-full rounded-full ${langColors[i % langColors.length]}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm italic text-slate-400">No programming languages recorded yet.</p>
+            )}
+          </div>
+
+          {/* TOP COLLABORATORS */}
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+            <h2 className="mb-4 text-lg font-semibold text-slate-900">Top Collaborators</h2>
+            {viewedTopCollabs.length === 0 ? (
+              <p className="text-sm italic text-slate-400">No accepted collaborators yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {viewedTopCollabs.map((c, idx) => (
+                  <div key={c.email} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">#{idx + 1}</div>
+                      <div>
+                        <p className="font-semibold text-slate-900">{c.name}</p>
+                        <p className="text-xs text-slate-400">{c.email}</p>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{c.count} {c.count === 1 ? 'Project' : 'Projects'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* FAVORITES */}
+          {viewedFavorites.length > 0 && (
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <h2 className="mb-4 text-lg font-semibold text-slate-900">Saved Portfolios & Projects</h2>
+              <div className="space-y-2">
+                {viewedFavorites.map((fav, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4">
+                    <div>
+                      {fav.type === 'portfolio' ? (
+                        <>
+                          <p className="font-semibold text-slate-900">{fav.firstName} {fav.lastName}</p>
+                          <p className="text-xs text-slate-400">Student Portfolio</p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-semibold text-slate-900">{fav.title}</p>
+                          <p className="text-xs text-slate-400">{fav.course}</p>
+                        </>
+                      )}
+                    </div>
+                    {fav.id && (
+                      <button onClick={() => navigate(`/project/${fav.id}`)} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-200">View</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* COMPLETED INTERNSHIPS */}
+          {viewedInternships.length > 0 && (
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+              <h2 className="mb-4 text-lg font-semibold text-slate-900">Completed Internships</h2>
+              <div className="space-y-2">
+                {viewedInternships.map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-4 w-4"><polyline points="20 6 9 17 4 12" /></svg>
+                    </div>
+                    <p className="text-sm text-slate-700">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -166,6 +302,14 @@ const Profile = () => {
   const [projectEditTagInput, setProjectEditTagInput] = useState('');
   const [projectDeleteTarget, setProjectDeleteTarget] = useState(null);
 
+  const [showAppealModal, setShowAppealModal] = useState(false);
+  const [appealTarget, setAppealTarget] = useState(null);
+  const [appealMessage, setAppealMessage] = useState('');
+
+  const [invitations, setInvitations] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`invitations_${user.email}`) || '[]'); } catch { return []; }
+  });
+
   const saveProjectEdit = () => {
     if (!projectEditForm?.title?.trim() || !projectEditForm?.description?.trim() || !projectEditForm?.course) return;
     const all = JSON.parse(localStorage.getItem('projects')) || [];
@@ -182,6 +326,62 @@ const Profile = () => {
     localStorage.setItem('projects', JSON.stringify(updated));
     setMyProjects(updated.filter(p => p.creatorId === user.email));
     setProjectDeleteTarget(null);
+  };
+
+  // ---------------- APPEAL ----------------
+  const submitAppeal = () => {
+    if (!appealMessage.trim() || !appealTarget) return;
+    const all = JSON.parse(localStorage.getItem('projects') || '[]');
+    const updated = all.map(p => p.id === appealTarget.id ? { ...p, appeal: appealMessage.trim() } : p);
+    localStorage.setItem('projects', JSON.stringify(updated));
+    setMyProjects(updated.filter(p => p.creatorId === user.email));
+    setShowAppealModal(false);
+    setAppealMessage('');
+    setAppealTarget(null);
+  };
+
+  // ---------------- INVITATIONS ----------------
+  const handleInvitationResponse = (invId, response) => {
+    const updated = invitations.map(inv => {
+      if (inv.id !== invId) return inv;
+      const stored = JSON.parse(localStorage.getItem('projects') || '[]');
+      const projIdx = stored.findIndex(p => p.id === inv.projectId);
+      if (projIdx >= 0) {
+        const proj = { ...stored[projIdx] };
+        if (response === 'accepted') {
+          if (inv.role === 'instructor') {
+            proj.instructors = (proj.instructors || []).map(i =>
+              i.email === user.email ? { ...i, status: 'accepted' } : i
+            );
+          } else {
+            proj.collaborators = (proj.collaborators || []).map(c =>
+              c.email === user.email ? { ...c, status: 'accepted' } : c
+            );
+          }
+        } else {
+          if (inv.role === 'instructor') {
+            proj.instructors = (proj.instructors || []).filter(i => i.email !== user.email);
+          } else {
+            proj.collaborators = (proj.collaborators || []).filter(c => c.email !== user.email);
+          }
+        }
+        stored[projIdx] = proj;
+        localStorage.setItem('projects', JSON.stringify(stored));
+
+        // Notify the project creator
+        const myName = user.firstName ? `${user.firstName} ${user.lastName}` : user.email;
+        const roleLabel = inv.role === 'instructor' ? 'course instructor' : 'collaborator';
+        const notifMsg = response === 'accepted'
+          ? `${myName} accepted your invitation to join "${proj.title}" as a ${roleLabel}`
+          : `${myName} declined your invitation to join "${proj.title}" as a ${roleLabel}`;
+        const notifs = JSON.parse(localStorage.getItem('notifications') || '[]');
+        notifs.push({ id: Date.now().toString(), userId: proj.creatorId, message: notifMsg, read: false, createdAt: new Date().toISOString() });
+        localStorage.setItem('notifications', JSON.stringify(notifs));
+      }
+      return { ...inv, status: response };
+    });
+    setInvitations(updated);
+    localStorage.setItem(`invitations_${user.email}`, JSON.stringify(updated));
   };
 
   // ---------------- PROFILE COMPLETION ----------------
@@ -263,18 +463,12 @@ const Profile = () => {
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-10">
 
-        {/* TOP BAR */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-extrabold text-slate-900">My Profile</h1>
-            <p className="mt-1 text-sm capitalize text-slate-500">{user.role} Account</p>
-          </div>
-          <button
-            onClick={() => navigate('/home')}
-            className="rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
-          >
-            Back
-          </button>
+        <PageHeader showBack={true} />
+
+        {/* PAGE TITLE */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-extrabold text-slate-900">My Profile</h1>
+          <p className="mt-1 text-sm capitalize text-slate-500">{user.role} Account</p>
         </div>
 
         {/* COMPLETION BANNER */}
@@ -622,6 +816,136 @@ const Profile = () => {
           </div>
         </div>
 
+        {/* ══ INVITATIONS (student + instructor) ══ */}
+        {(user.role === 'student' || user.role === 'instructor') && (
+          <div className="mb-8 rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+            <h3 className="mb-5 text-xl font-bold text-slate-900">Project Invitations</h3>
+            {invitations.length === 0 ? (
+              <p className="text-sm italic text-slate-400">No invitations yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {invitations.map(inv => (
+                  <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-white p-4">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-slate-900 truncate">{inv.projectTitle}</p>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        From <span className="font-medium text-slate-600">{inv.fromName}</span>
+                        {' · '}
+                        <span className="capitalize">{inv.role}</span>
+                        {inv.createdAt && ` · ${inv.createdAt}`}
+                      </p>
+                    </div>
+                    {inv.status === 'pending' ? (
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          onClick={() => handleInvitationResponse(inv.id, 'accepted')}
+                          className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => handleInvitationResponse(inv.id, 'rejected')}
+                          className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${inv.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                        {inv.status === 'accepted' ? 'Accepted ✓' : 'Rejected'}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══ INSTRUCTOR SECTIONS ══ */}
+        {user.role === 'instructor' && (
+          <div className="space-y-8">
+            {(() => {
+              const allStored = JSON.parse(localStorage.getItem('projects') || '[]');
+              const instructorProjects = allStored.filter(p =>
+                (p.instructors || []).some(i => i.email === user.email && i.status === 'accepted')
+              );
+              return (
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Assigned</span>
+                      <h3 className="mt-0.5 text-2xl font-bold text-slate-900">Projects I'm Instructing</h3>
+                    </div>
+                    <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+                      {instructorProjects.length} {instructorProjects.length === 1 ? 'Project' : 'Projects'}
+                    </span>
+                  </div>
+                  {instructorProjects.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                      <p className="text-sm text-slate-400">You haven't been assigned as instructor on any project yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {instructorProjects.map(p => (
+                        <div key={p.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:shadow-md">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">{p.course}</span>
+                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${p.isPublic ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
+                                  {p.isPublic ? 'Public' : 'Private'}
+                                </span>
+                                {p.flagged && (
+                                  <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">Flagged</span>
+                                )}
+                                {p.createdAt && <span className="text-xs text-slate-400">{p.createdAt}</span>}
+                              </div>
+                              <h4 className="text-base font-bold text-slate-900">{p.title}</h4>
+                              {p.description && <p className="mt-1 text-sm text-slate-500 line-clamp-2">{p.description}</p>}
+                              <p className="mt-1 text-xs text-slate-400">
+                                Creator: <span className="font-medium text-slate-600">{p.creatorName || p.creatorId}</span>
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-0.5">
+                              {[1,2,3,4,5].map(s => (
+                                <svg key={s} viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {p.languages?.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-1.5">
+                              {p.languages.map(l => (
+                                <span key={l} className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{l}</span>
+                              ))}
+                            </div>
+                          )}
+                          {p.flagged && p.appeal && (
+                            <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-3">
+                              <p className="text-xs font-semibold text-amber-700">Student Appeal:</p>
+                              <p className="mt-0.5 text-sm text-amber-800">{p.appeal}</p>
+                            </div>
+                          )}
+                          <div className="mt-4">
+                            <button
+                              onClick={() => navigate(`/project/${p.id}`)}
+                              className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                            >
+                              View Project
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
         {/* ══ STUDENT SECTIONS ══ */}
         {user.role === 'student' && (
           <div className="space-y-8">
@@ -652,6 +976,7 @@ const Profile = () => {
                             <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${p.isPublic ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-500'}`}>
                               {p.isPublic ? 'Public' : 'Private'}
                             </span>
+                            {p.flagged && <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-600">Flagged</span>}
                             {p.createdAt && <span className="text-xs text-slate-400">{p.createdAt}</span>}
                           </div>
                           <h4 className="text-base font-bold text-slate-900">{p.title}</h4>
@@ -744,6 +1069,19 @@ const Profile = () => {
                         >
                           Delete
                         </button>
+                        {p.flagged && !p.appeal && (
+                          <button
+                            onClick={() => { setAppealTarget(p); setAppealMessage(''); setShowAppealModal(true); }}
+                            className="rounded-full bg-amber-50 px-4 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100"
+                          >
+                            Appeal Flag
+                          </button>
+                        )}
+                        {p.flagged && p.appeal && (
+                          <span className="rounded-full bg-emerald-50 px-4 py-1.5 text-xs font-semibold text-emerald-700">
+                            Appeal Sent ✓
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -757,6 +1095,71 @@ const Profile = () => {
                 </div>
               )}
             </div>
+
+            {/* COLLABORATING ON */}
+            {(() => {
+              const allStored = JSON.parse(localStorage.getItem('projects') || '[]');
+              const collabProjects = allStored.filter(p =>
+                p.creatorId !== user.email &&
+                (p.collaborators || []).some(c => c.email === user.email && c.status === 'accepted')
+              );
+              return (
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-widest text-sky-600">Contributions</span>
+                      <h3 className="mt-0.5 text-2xl font-bold text-slate-900">Collaborating On</h3>
+                    </div>
+                    <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">{collabProjects.length} {collabProjects.length === 1 ? 'Project' : 'Projects'}</span>
+                  </div>
+                  {collabProjects.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center">
+                      <p className="text-sm text-slate-400">You haven't been added as a collaborator on any project yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {collabProjects.map(p => (
+                        <div key={p.id} className="rounded-2xl border border-slate-100 bg-white p-4 transition hover:shadow-md">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-1 flex flex-wrap items-center gap-2">
+                                <span className="rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">{p.course}</span>
+                                {p.createdAt && <span className="text-xs text-slate-400">{p.createdAt}</span>}
+                              </div>
+                              <h4 className="font-bold text-slate-900">{p.title}</h4>
+                              {p.description && <p className="mt-1 text-sm text-slate-500 line-clamp-2">{p.description}</p>}
+                              <p className="mt-1 text-xs text-slate-400">Creator: <span className="text-slate-600">{p.creatorName || p.creatorId}</span></p>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1">
+                              {[1,2,3,4,5].map(s => (
+                                <svg key={s} viewBox="0 0 24 24" className={`h-3.5 w-3.5 ${s <= (p.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                </svg>
+                              ))}
+                            </div>
+                          </div>
+                          {p.languages?.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {p.languages.map(l => (
+                                <span key={l} className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">{l}</span>
+                              ))}
+                            </div>
+                          )}
+                          <div className="mt-3">
+                            <button
+                              onClick={() => navigate(`/project/${p.id}`)}
+                              className="rounded-full bg-sky-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-sky-500"
+                            >
+                              View Project
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* FAVORITES */}
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
@@ -797,15 +1200,15 @@ const Profile = () => {
             {/* PORTFOLIO STATS */}
             <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
               <h3 className="mb-6 text-xl font-bold text-slate-900">Portfolio Statistics</h3>
-              <div className="grid gap-4 md:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-3 mb-6">
                 <div className="rounded-2xl bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">Total Projects</p>
                   <p className="mt-2 text-4xl font-bold text-emerald-600">{myProjects.length}</p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Skills Count</p>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Skills</p>
                   <p className="text-4xl font-bold text-emerald-600">{skills.length}</p>
-                  <p className="mt-1 text-xs text-slate-400">skills on profile</p>
+                  <p className="mt-1 text-xs text-slate-400">on profile</p>
                 </div>
                 <div className="rounded-2xl bg-slate-50 p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-3">Internships</p>
@@ -813,63 +1216,84 @@ const Profile = () => {
                   <p className="mt-1 text-xs text-slate-400">completed</p>
                 </div>
               </div>
+              {/* Programming languages breakdown */}
+              {(() => {
+                const allLangs = myProjects.flatMap(p => p.languages || []);
+                if (allLangs.length === 0) return (
+                  <p className="text-sm italic text-slate-400">No programming languages recorded across your projects yet.</p>
+                );
+                const counts = {};
+                allLangs.forEach(l => { counts[l] = (counts[l] || 0) + 1; });
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                const total = allLangs.length;
+                const colors = ['bg-emerald-500','bg-blue-500','bg-violet-500','bg-amber-500','bg-rose-500','bg-cyan-500','bg-orange-500'];
+                return (
+                  <div>
+                    <p className="mb-4 text-xs font-semibold uppercase tracking-widest text-slate-400">Languages Used</p>
+                    <div className="space-y-2.5">
+                      {sorted.map(([lang, count], i) => {
+                        const pct = Math.round((count / total) * 100);
+                        return (
+                          <div key={lang}>
+                            <div className="mb-1 flex items-center justify-between text-xs">
+                              <span className="font-medium text-slate-700">{lang}</span>
+                              <span className="text-slate-400">{pct}% ({count})</span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className={`h-full rounded-full transition-all ${colors[i % colors.length]}`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
-{/* TOP COLLABORATORS */}
-<div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
-  <h3 className="mb-6 text-xl font-bold text-slate-900">
-    Top Collaborators
-  </h3>
-
-  {[
-    {
-      id: 1,
-      firstName: "Marina",
-      lastName: "Nader",
-      email: "marina.nader@guc.edu.eg",
-      count: 6,
-    },
-    {
-      id: 2,
-      firstName: "Mervat",
-      lastName: "Abuelkheir",
-      email: "mervat.abuelkheir@guc.edu.eg",
-      count: 4,
-    },
-    {
-      id: 3,
-      firstName: "Youssef",
-      lastName: "Adel",
-      email: "youssef.adel@guc.edu.eg",
-      count: 3,
-    },
-  ].map((collab, index) => (
-    <div
-      key={collab.id}
-      className="mb-4 flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-5"
-    >
-      <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-lg font-bold text-emerald-700">
-          #{index + 1}
-        </div>
-
-        <div>
-          <p className="font-semibold text-slate-900">
-            {collab.firstName} {collab.lastName}
-          </p>
-
-          <p className="text-sm text-slate-400">
-            {collab.email}
-          </p>
-        </div>
-      </div>
-
-      <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
-        {collab.count} Projects
-      </div>
-    </div>
-  ))}
-</div>
+            {/* TOP COLLABORATORS */}
+            {(() => {
+              const collabMap = {};
+              myProjects.forEach(p => {
+                (p.collaborators || []).filter(c => c.status === 'accepted').forEach(c => {
+                  if (!collabMap[c.email]) {
+                    collabMap[c.email] = { email: c.email, name: c.name || c.email, count: 0 };
+                  }
+                  collabMap[c.email].count++;
+                });
+              });
+              const topCollabs = Object.values(collabMap).sort((a, b) => b.count - a.count).slice(0, 5);
+              return (
+                <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-sm backdrop-blur">
+                  <h3 className="mb-6 text-xl font-bold text-slate-900">Top Collaborators</h3>
+                  {topCollabs.length === 0 ? (
+                    <p className="text-sm italic text-slate-400">No accepted collaborators on your projects yet.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {topCollabs.map((collab, index) => (
+                        <div key={collab.email} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-5">
+                          <div className="flex items-center gap-4">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
+                              #{index + 1}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900">{collab.name}</p>
+                              <p className="text-xs text-slate-400">{collab.email}</p>
+                            </div>
+                          </div>
+                          <span className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700">
+                            {collab.count} {collab.count === 1 ? 'Project' : 'Projects'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
 
             {/* COMPLETED INTERNSHIPS */}
@@ -1034,6 +1458,42 @@ const Profile = () => {
         )}
 
       </div>
+
+      {/* ══ APPEAL MODAL ══ */}
+      {showAppealModal && appealTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <h3 className="mb-1 text-lg font-semibold text-slate-900">Appeal Flag</h3>
+            <p className="mb-4 text-sm text-slate-500">
+              Explain why <span className="font-semibold text-slate-700">"{appealTarget.title}"</span> should be unflagged. Keep it brief and clear.
+            </p>
+            <textarea
+              value={appealMessage}
+              onChange={e => setAppealMessage(e.target.value.slice(0, 300))}
+              rows={4}
+              maxLength={300}
+              placeholder="Describe why this flag should be removed..."
+              className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+            />
+            <p className="mt-1 text-right text-xs text-slate-400">{appealMessage.length}/300</p>
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => { setShowAppealModal(false); setAppealMessage(''); setAppealTarget(null); }}
+                className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitAppeal}
+                disabled={!appealMessage.trim()}
+                className="rounded-full bg-amber-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-amber-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit Appeal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ PROJECT EDIT MODAL ══ */}
       {showProjectEditModal && projectEditForm && (
