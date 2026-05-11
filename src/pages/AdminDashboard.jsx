@@ -1659,11 +1659,29 @@ function AdminDashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {filteredPortfolios.map((portfolio) => (
-          <div
-            key={userKey(portfolio.student)}
-            className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-lg backdrop-blur"
-          >
+        {filteredPortfolios.map((portfolio) => {
+          const targetEmail = portfolio.email || portfolio.student?.email;
+          const openPortfolio = () => {
+            if (!targetEmail) return;
+            navigate(`/profile?email=${encodeURIComponent(targetEmail)}`, {
+              state: { fromAdmin: true },
+            });
+          };
+
+          return (
+            <div
+              key={userKey(portfolio.student)}
+              role="button"
+              tabIndex={0}
+              onClick={openPortfolio}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  openPortfolio();
+                }
+              }}
+              className="cursor-pointer rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-lg backdrop-blur transition hover:-translate-y-0.5 hover:shadow-xl"
+            >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-slate-900">{portfolio.name}</h2>
@@ -1686,20 +1704,37 @@ function AdminDashboard() {
                 </Pill>
                 <ActionButton
                   variant="secondary"
-                  onClick={() => setModal({ type: "portfolio", data: portfolio })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openPortfolio();
+                  }}
                 >
                   View Portfolio
                 </ActionButton>
               </div>
             </div>
-          </div>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 
   const renderNotifications = () => (
     <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-slate-200 bg-white/80 px-5 py-4 shadow-sm backdrop-blur">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+            Notifications
+          </p>
+          <p className="mt-1 text-sm text-slate-500">
+            Review system alerts and admin updates.
+          </p>
+        </div>
+        <Pill className={unreadCount ? statusClass("pending") : statusClass("accepted")}>
+          {unreadCount} unread
+        </Pill>
+      </div>
       {adminNotifications.map((alert) => (
         <div
           key={alert.id}
@@ -1732,7 +1767,61 @@ function AdminDashboard() {
 
   const renderDocuments = () => {
     const employersWithDocs = employers.filter((employer) => employer.taxDocument);
-    const students = users.filter((user) => user.role === "student");
+    const projectDrafts = projects.flatMap((project) => {
+      const drafts = project.thesisDrafts || [];
+      if (drafts.length === 0) return [];
+
+      const ownerById = users.find((user) => user.id === project.creatorId);
+      const ownerByEmail = users.find(
+        (user) =>
+          user.email === project.creatorId ||
+          user.email === project.creatorEmail ||
+          user.email === project.ownerEmail
+      );
+      const owner = ownerById || ownerByEmail;
+      const ownerName = owner ? getUserName(owner) : project.creatorName || "Unknown student";
+      const ownerEmail =
+        owner?.email ||
+        project.creatorEmail ||
+        project.ownerEmail ||
+        (typeof project.creatorId === "string" && project.creatorId.includes("@")
+          ? project.creatorId
+          : "No email");
+
+      return drafts.map((draft) => ({
+        draft,
+        project,
+        ownerKey: owner?.id || ownerEmail || ownerName,
+        ownerName,
+        ownerEmail,
+      }));
+    });
+
+    const thesesByStudent = projectDrafts.reduce((map, entry) => {
+      if (!map.has(entry.ownerKey)) {
+        map.set(entry.ownerKey, {
+          ownerName: entry.ownerName,
+          ownerEmail: entry.ownerEmail,
+          drafts: [],
+        });
+      }
+      map.get(entry.ownerKey).drafts.push(entry);
+      return map;
+    }, new Map());
+
+    const openDraft = (draft) => {
+      if (!draft?.fileUrl) return;
+      window.open(draft.fileUrl, "_blank", "noopener,noreferrer");
+    };
+
+    const downloadDraft = (draft) => {
+      if (!draft?.fileUrl) return;
+      const link = document.createElement("a");
+      link.href = draft.fileUrl;
+      link.download = draft.name || "thesis-draft.pdf";
+      link.rel = "noopener noreferrer";
+      link.click();
+    };
 
     return (
       <div className="space-y-6">
@@ -1799,21 +1888,79 @@ function AdminDashboard() {
             </div>
           </div>
           <div className="mt-4 space-y-3">
-            {students.map((student) => (
+            {Array.from(thesesByStudent.values()).map((student) => (
               <div
-                key={`thesis-${userKey(student)}`}
-                className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+                key={`thesis-${student.ownerEmail}-${student.ownerName}`}
+                className="rounded-2xl border border-slate-100 bg-white/80 p-4"
               >
-                <div>
-                  <p className="font-semibold text-slate-900">{getUserName(student)}</p>
-                  <p className="text-sm text-slate-500">{student.email || "No email"}</p>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold text-slate-900">{student.ownerName}</p>
+                    <p className="text-sm text-slate-500">{student.ownerEmail}</p>
+                  </div>
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    {student.drafts.length} draft{student.drafts.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  No thesis uploaded
-                </span>
+                <div className="mt-3 space-y-3">
+                  {student.drafts.map(({ draft, project }) => (
+                    <div
+                      key={`${project.id || project.title}-${draft.id}`}
+                      className={`rounded-2xl border p-4 ${
+                        draft.isFinal
+                          ? "border-emerald-200 bg-emerald-50/80"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            {draft.isFinal && (
+                              <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-xs font-semibold text-white">
+                                Final Draft
+                              </span>
+                            )}
+                            {draft.isPrivate && (
+                              <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs text-slate-500">
+                                Private
+                              </span>
+                            )}
+                            <span className="text-xs text-slate-400">
+                              {draft.uploadedAt || "Unknown date"}
+                            </span>
+                          </div>
+                          <p className="font-semibold text-slate-900">{draft.name}</p>
+                          <p className="mt-1 text-sm text-slate-500">
+                            {project.title || "Untitled project"} · {project.course || "No course"}
+                          </p>
+                        </div>
+                        {draft.fileUrl ? (
+                          <div className="flex flex-wrap gap-2">
+                            <ActionButton
+                              variant="secondary"
+                              onClick={() => openDraft(draft)}
+                            >
+                              View
+                            </ActionButton>
+                            <ActionButton
+                              variant="secondary"
+                              onClick={() => downloadDraft(draft)}
+                            >
+                              Download
+                            </ActionButton>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                            No file available
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
-            {students.length === 0 && (
+            {thesesByStudent.size === 0 && (
               <EmptyState>No student theses to review yet.</EmptyState>
             )}
           </div>
@@ -2117,13 +2264,6 @@ function AdminDashboard() {
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-sm shadow-sm">
-                <p className="font-semibold text-slate-900">{getUserName(currentAdmin)}</p>
-                <p className="text-xs text-slate-500">{currentAdmin.email}</p>
-              </div>
-              <Pill className={unreadCount ? statusClass("pending") : statusClass("accepted")}>
-                {unreadCount} unread
-              </Pill>
               <ActionButton variant="dark" onClick={signOut}>
                 Sign Out
               </ActionButton>
@@ -2133,19 +2273,29 @@ function AdminDashboard() {
 
         <nav className="mb-6 overflow-x-auto rounded-2xl border border-slate-200 bg-white/70 p-1 shadow-sm backdrop-blur">
           <div className="flex min-w-max gap-1">
-            {TABS.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${
-                  activeTab === tab
-                    ? "bg-slate-900 text-white shadow"
-                    : "text-slate-500 hover:bg-white hover:text-slate-900"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
+            {TABS.map((tab) => {
+              const isNotifications = tab === "notifications";
+              const showUnreadDot = isNotifications && unreadCount > 0;
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`rounded-xl px-4 py-2 text-sm font-semibold capitalize transition ${
+                    activeTab === tab
+                      ? "bg-slate-900 text-white shadow"
+                      : "text-slate-500 hover:bg-white hover:text-slate-900"
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <span>{tab}</span>
+                    {showUnreadDot && (
+                      <span className="h-2 w-2 rounded-full bg-amber-400" />
+                    )}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </nav>
 
