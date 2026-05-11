@@ -4,67 +4,48 @@ import { useNavigate } from "react-router-dom";
 function ForgotPassword() {
   const navigate = useNavigate();
 
-  // 🧠 STATE
-  const [step, setStep] = useState(1); // 1 = email, 2 = reset
+  const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [generatedOtp, setGeneratedOtp] = useState("");
   const [enteredOtp, setEnteredOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  // 🧠 STEP 1: SEND OTP
   const handleSendOtp = (e) => {
     e.preventDefault();
-
+    setError("");
     const users = JSON.parse(localStorage.getItem("users")) || [];
-
     const userExists = users.find((user) => user.email === email.trim());
-
     if (!userExists) {
-      alert("Email not found");
+      setError("No account found with this email address.");
       return;
     }
-
-    // 🔥 Generate OTP (simulation)
     const otp = Math.floor(1000 + Math.random() * 9000);
     setGeneratedOtp(otp.toString());
-
-    alert("Your OTP is: " + otp); // simulate sending email
-
     setStep(2);
   };
 
-  // 🧠 STEP 2: RESET PASSWORD
   const handleResetPassword = (e) => {
     e.preventDefault();
-
+    setError("");
     if (enteredOtp !== generatedOtp) {
-      alert("Invalid OTP");
+      setError("Invalid OTP. Please check and try again.");
       return;
     }
-
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match");
+      setError("Passwords do not match.");
       return;
     }
-
     const users = JSON.parse(localStorage.getItem("users")) || [];
-
     const updatedUsers = users.map((user) =>
-      user.email === email
-        ? { ...user, password: newPassword }
-        : user
+      user.email === email ? { ...user, password: newPassword } : user
     );
-
-    // update users
     localStorage.setItem("users", JSON.stringify(updatedUsers));
-
-    // 🔥 logout user after password change (better UX + realism)
     localStorage.removeItem("user");
-
-    alert("Password updated successfully!");
-
-    navigate("/login");
+    setSuccess("Password updated successfully! Redirecting to login…");
+    setTimeout(() => navigate("/login"), 1500);
   };
 
   return (
@@ -83,61 +64,69 @@ function ForgotPassword() {
           Forgot Password?
         </h2>
 
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+            {success}
+          </div>
+        )}
+
         {/* STEP 1 */}
         {step === 1 && (
           <form onSubmit={handleSendOtp} className="space-y-4">
-
             <input
               type="email"
               placeholder="Enter your email"
               required
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
             />
-
-            <button className="w-full bg-emerald-600 text-white py-3 rounded-xl">
+            <button className="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold transition hover:bg-emerald-500">
               Send OTP
             </button>
-
           </form>
         )}
 
         {/* STEP 2 */}
         {step === 2 && (
           <form onSubmit={handleResetPassword} className="space-y-4">
-
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-center">
+              <p className="text-xs font-semibold uppercase tracking-widest text-amber-600">Your OTP</p>
+              <p className="mt-1 text-3xl font-bold tracking-widest text-amber-700">{generatedOtp}</p>
+              <p className="mt-1 text-xs text-amber-500">Enter this code below to reset your password.</p>
+            </div>
             <input
               type="text"
               placeholder="Enter OTP"
               required
               value={enteredOtp}
-              onChange={(e) => setEnteredOtp(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+              onChange={(e) => { setEnteredOtp(e.target.value); setError(""); }}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
             />
-
             <input
               type="password"
               placeholder="New Password"
               required
               value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+              onChange={(e) => { setNewPassword(e.target.value); setError(""); }}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
             />
-
             <input
               type="password"
               placeholder="Confirm Password"
               required
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full border border-slate-200 rounded-xl px-4 py-3"
+              onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+              className="w-full border border-slate-200 rounded-xl px-4 py-3 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
             />
-
-            <button className="w-full bg-emerald-600 text-white py-3 rounded-xl">
+            <button className="w-full bg-emerald-600 text-white py-3 rounded-xl font-semibold transition hover:bg-emerald-500">
               Reset Password
             </button>
-
           </form>
         )}
 

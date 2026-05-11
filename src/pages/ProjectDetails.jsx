@@ -3,53 +3,53 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
 
 const MOCK_USERS = [
-  { id: "u2", email: "sara@guc.com", firstName: "Sara", lastName: "Ahmed", role: "student" },
-  { id: "u3", email: "karim@guc.com", firstName: "Karim", lastName: "Nasser", role: "student" },
-  { id: "u4", email: "dr.ali@guc.com", firstName: "Ali", lastName: "Mahmoud", role: "instructor" },
-  { id: "u5", email: "dr.heba@guc.com", firstName: "Heba", lastName: "Youssef", role: "instructor" },
-  { id: "u6", email: "nour@guc.com", firstName: "Nour", lastName: "Ibrahim", role: "student" },
+  { id: "stu-2", email: "omar.farouk@student.guc.edu.eg", firstName: "Omar", lastName: "Farouk", role: "student" },
+  { id: "stu-3", email: "nour.sherif@student.guc.edu.eg", firstName: "Nour", lastName: "Sherif", role: "student" },
+  { id: "stu-4", email: "youssef.khaled@student.guc.edu.eg", firstName: "Youssef", lastName: "Khaled", role: "student" },
+  { id: "ins-1", email: "rania.mansour@guc.edu.eg", firstName: "Rania", lastName: "Mansour", role: "instructor" },
+  { id: "ins-2", email: "tarek.sobhy@guc.edu.eg", firstName: "Tarek", lastName: "Sobhy", role: "instructor" },
 ];
 
 const MOCK_PROJECT = {
-  id: "demo",
-  title: "Smart Campus Navigation System",
-  description: "A mobile application that helps students navigate the GUC campus using augmented reality and real-time occupancy data.",
-  report: "This project delivers an AR-based indoor navigation system for the GUC campus. The mobile app overlays directional cues on the live camera feed using ARCore, while a Node.js/PostgreSQL backend provides real-time room occupancy data sourced from IoT sensors. Users can search for rooms, track capacity, and receive turn-by-turn directions without prior knowledge of the building layout. The system was tested across three GUC buildings with a 92% route-completion accuracy.",
+  id: "project-seeded-1",
+  title: "GUC Lost & Found Platform",
+  description: "A full-stack web app that lets GUC students report lost items and claim found ones with real-time notifications.",
+  report: "This project delivers a full-stack Lost & Found platform for the GUC campus. Students can create listings for lost or found items with photo uploads and location tags. A Node.js/Express backend backed by PostgreSQL manages item records and sends push notifications when a potential match is detected. The matching algorithm compares item descriptions using TF-IDF similarity, achieving a 78% match accuracy in user testing across 200 sample listings.",
   course: "Bachelor Project",
   isPublic: true,
-  creatorId: "u1",
-  creatorName: "Ahmed Hassan",
+  creatorId: "layla.hassan@student.guc.edu.eg",
+  creatorName: "Layla Hassan",
   collaborators: [
-    { userId: "u2", email: "sara@guc.com", firstName: "Sara", lastName: "Ahmed", status: "accepted" },
-    { userId: "u3", email: "karim@guc.com", firstName: "Karim", lastName: "Nasser", status: "pending" },
+    { userId: "stu-2", email: "omar.farouk@student.guc.edu.eg", firstName: "Omar", lastName: "Farouk", status: "accepted" },
+    { userId: "stu-4", email: "youssef.khaled@student.guc.edu.eg", firstName: "Youssef", lastName: "Khaled", status: "pending" },
   ],
   instructors: [
-    { userId: "u4", email: "dr.ali@guc.com", firstName: "Ali", lastName: "Mahmoud", status: "accepted" },
+    { userId: "ins-1", email: "rania.mansour@guc.edu.eg", firstName: "Rania", lastName: "Mansour", status: "accepted" },
   ],
   tasks: [
-    { id: "t1", title: "Setup project repository", description: "Initialize Git and project structure", assignedTo: "u1", assigneeName: "Ahmed Hassan", status: "completed", deadline: "2026-04-01", order: 0, instructorComment: "Good start, keep the README updated." },
-    { id: "t2", title: "Design database schema", description: "Create ER diagram and define all tables", assignedTo: "u2", assigneeName: "Sara Ahmed", status: "pending", deadline: "2026-05-15", order: 1, instructorComment: "" },
-    { id: "t3", title: "Implement AR navigation module", description: "Build core AR rendering using ARCore", assignedTo: "u1", assigneeName: "Ahmed Hassan", status: "postponed", deadline: "2026-05-30", order: 2, instructorComment: "" },
+    { id: "t1", title: "Set up monorepo and CI pipeline", description: "Initialize project structure, configure ESLint, Prettier, and GitHub Actions.", assignedTo: "layla.hassan@student.guc.edu.eg", assigneeName: "Layla Hassan", status: "completed", deadline: "2026-03-22", order: 0, instructorComment: "Solid setup. Keep the CI green." },
+    { id: "t2", title: "Design database schema", description: "Define all tables, relations, and indexes in PostgreSQL.", assignedTo: "omar.farouk@student.guc.edu.eg", assigneeName: "Omar Farouk", status: "completed", deadline: "2026-04-01", order: 1, instructorComment: "Schema looks normalized. Add an index on item status." },
+    { id: "t3", title: "Build item matching algorithm", description: "Implement TF-IDF similarity scoring between lost and found listings.", assignedTo: "layla.hassan@student.guc.edu.eg", assigneeName: "Layla Hassan", status: "pending", deadline: "2026-05-20", order: 2, instructorComment: "" },
   ],
   thesisDrafts: [
-    { id: "d1", name: "Draft 1 - Initial Proposal.pdf", isFinal: false, isPrivate: false, uploadedAt: "2026-03-15", instructorComment: "Good introduction but needs a stronger methodology section." },
-    { id: "d2", name: "Draft 2 - Revised Methodology.pdf", isFinal: true, isPrivate: false, uploadedAt: "2026-04-20", instructorComment: "" },
+    { id: "d1", name: "Draft 1 - Initial Proposal.pdf", isFinal: false, isPrivate: false, uploadedAt: "2026-03-20", instructorComment: "Good structure. Expand the related-work section with recent papers." },
+    { id: "d2", name: "Draft 2 - Revised Methodology.pdf", isFinal: true, isPrivate: false, uploadedAt: "2026-04-25", instructorComment: "" },
   ],
-  githubLink: "https://github.com/ahmed/smart-campus",
+  githubLink: "https://github.com/layla-hassan/guc-lost-found",
   demoVideo: "",
-  languages: ["React Native", "Node.js", "PostgreSQL"],
+  languages: ["React", "Node.js", "PostgreSQL"],
   rating: 4,
-  instructorFeedback: "Strong project concept with a clear implementation plan. The AR integration is innovative and well-scoped.",
+  instructorFeedback: "A well-scoped and practically useful project. The matching algorithm idea is a strong differentiator — focus on recall in the next milestone.",
   flagged: false,
   flagReason: "",
   appeal: "",
-  tags: ["AR", "IoT", "Navigation"],
+  tags: ["React", "Node.js", "PostgreSQL"],
 };
 
 const COURSES = [
-  "Bachelor Project","Software Engineering","Operating Systems","Machine Learning",
-  "Embedded Systems","Database Systems","Computer Networks","Artificial Intelligence",
-  "Mobile Development","Cyber Security","Data Structures","Algorithms",
+  "Bachelor Project", "Software Engineering", "Database Systems", "Operating Systems",
+  "Machine Learning", "Artificial Intelligence", "Computer Networks", "Data Structures & Algorithms",
+  "Mobile Application Development", "Cyber Security", "Embedded Systems", "Web Application Development",
 ];
 
 function ProjectDetails() {
@@ -193,6 +193,10 @@ const [draftFile, setDraftFile] = useState(null);
     );
   };
 
+  const loadInvitations = () => {
+    try { return JSON.parse(localStorage.getItem(`invitations_${currentUser.email}`) || "[]"); } catch { return []; }
+  };
+
   const sendInvitation = (invUser) => {
     const entry = { userId: invUser.id, email: invUser.email, firstName: invUser.firstName, lastName: invUser.lastName, status: "pending" };
     const updated = invUser.role === "instructor"
@@ -217,6 +221,7 @@ const [draftFile, setDraftFile] = useState(null);
     addNotification(invUser.email, `You have been invited to join "${project.title}" as a ${roleLabel}`);
     addNotification("admin@guc.edu.eg", `${currentUser.firstName} ${currentUser.lastName} invited ${invUser.firstName} ${invUser.lastName} (${roleLabel}) to project "${project.title}"`);
     setSearchResults(prev => prev.filter(r => r.id !== invUser.id));
+    setInvitations(loadInvitations());
   };
 
   const cancelInvitation = (userId, type) => {
@@ -230,6 +235,7 @@ const [draftFile, setDraftFile] = useState(null);
     if (person) {
       addNotification("admin@guc.edu.eg", `${currentUser.firstName} ${currentUser.lastName} cancelled the invitation for ${person.firstName} ${person.lastName} on project "${project.title}"`);
     }
+    setInvitations(loadInvitations());
   };
 
 const removeCollaborator = (userId) => {

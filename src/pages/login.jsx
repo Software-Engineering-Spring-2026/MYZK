@@ -32,13 +32,13 @@ function Login() {
   const [employerPupilOffset, setEmployerPupilOffset] = useState({ x: 0, y: 0 });
   const [eyesClosed, setEyesClosed] = useState(false);
   const employerPupilBase = { x: -2.5, y: 0 };
+  const [email, setEmail] = useState(() => localStorage.getItem("rememberedEmail") || "");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("rememberedEmail"));
+  const [loginError, setLoginError] = useState("");
 
   const handleLogin = (e) => {
     e.preventDefault();
-
-    // 🧠 GET FORM VALUES (from inputs)
-    const email = e.target[0].value;
-    const password = e.target[1].value;
 
     // 🧠 GET USERS FROM localStorage (fake database)
     const users = JSON.parse(localStorage.getItem("users")) || [];
@@ -50,8 +50,15 @@ function Login() {
 
     // ❌ IF USER NOT FOUND
     if (!foundUser) {
-      alert("Invalid email or password");
+      setLoginError("Invalid email or password.");
       return;
+    }
+    setLoginError("");
+
+    if (rememberMe) {
+      localStorage.setItem("rememberedEmail", email);
+    } else {
+      localStorage.removeItem("rememberedEmail");
     }
 
     // ✅ SAVE LOGGED-IN USER
@@ -221,6 +228,8 @@ function Login() {
                   type="email"
                   placeholder="you@email.com"
                   required
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); setLoginError(""); }}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   autoComplete="email"
@@ -234,6 +243,8 @@ function Login() {
                   type="password"
                   placeholder="Your password"
                   required
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(""); }}
                   onFocus={handleFocus}
                   onBlur={handleBlur}
                   autoComplete="current-password"
@@ -243,13 +254,22 @@ function Login() {
 
               <div className="flex items-center justify-between text-sm text-slate-500">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 rounded border-slate-300 bg-white" />
+                  <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} className="h-4 w-4 rounded border-slate-300 bg-white" />
                   Remember me
                 </label>
                 <Link to="/forgot-password" className="text-sm text-emerald-600">
                   Forgot password?
                 </Link>
               </div>
+
+              {loginError && (
+                <div className="flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  {loginError}
+                </div>
+              )}
 
               <button
                 type="submit"

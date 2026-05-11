@@ -23,7 +23,7 @@ export default function PageHeader({ showBack = true }) {
     pushNotifications: false,
   });
 
-  const myNotifications = notifications.filter(n => !n.userId || n.userId === user?.email);
+  const myNotifications = notifications.filter(n => n.userId === user?.email);
   const unreadCount = myNotifications.filter(n => !n.read).length;
 
   const toggleRead = (id) => {
@@ -175,7 +175,7 @@ export default function PageHeader({ showBack = true }) {
                             onClick={() => toggleSetting(item.key)}
                             className={`relative h-5 w-10 rounded-full transition-colors ${settings[item.key] ? 'bg-emerald-500' : 'bg-slate-200'}`}
                           >
-                            <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings[item.key] ? 'left-5.5' : 'left-0.5'}`} />
+                            <div className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${settings[item.key] ? 'left-[22px]' : 'left-0.5'}`} />
                           </button>
                         </div>
                       ))}
