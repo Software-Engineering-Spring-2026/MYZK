@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 
 const COURSES = [
-  'Bachelor Project','Software Engineering','Operating Systems','Machine Learning',
-  'Embedded Systems','Database Systems','Computer Networks','Artificial Intelligence',
-  'Mobile Development','Cyber Security','Data Structures','Algorithms',
+  'Bachelor Project', 'Software Engineering', 'Database Systems', 'Operating Systems',
+  'Machine Learning', 'Artificial Intelligence', 'Computer Networks', 'Data Structures & Algorithms',
+  'Mobile Application Development', 'Cyber Security', 'Embedded Systems', 'Web Application Development',
 ];
 
 const Profile = () => {
@@ -417,7 +417,6 @@ const Profile = () => {
       localStorage.setItem(`bio_${user.email}`, biography);
       localStorage.setItem(`research_${user.email}`, researchInterests);
       localStorage.setItem(`education_${user.email}`, education);
-      localStorage.setItem(`courses_${user.email}`, JSON.stringify(courses));
     } else {
       localStorage.setItem(`companyBio_${user.email}`, companyBio);
       localStorage.setItem(`companyAddress_${user.email}`, companyAddress);
@@ -435,16 +434,58 @@ const Profile = () => {
   };
   const removeSkill = (s) => setSkills(prev => prev.filter(x => x !== s));
 
-  // ---------------- COURSE HELPERS ----------------
-  const addCourse = () => {
+  // ---------------- COURSE REQUEST STATE ----------------
+  const [myCourseRequests, setMyCourseRequests] = useState(() => {
+    try {
+      return (JSON.parse(localStorage.getItem('courseLinkRequests')) || [])
+        .filter(r => r.instructorEmail === user.email);
+    } catch { return []; }
+  });
+
+  // ---------------- COURSE REQUEST HELPERS ----------------
+  const requestCourseLink = () => {
     const c = courseInput.trim();
-    if (!c || courses.includes(c)) return;
-    setCourses(prev => [...prev, c]);
+    if (!c) return;
+    const instructorName = user.firstName ? `${user.firstName} ${user.lastName}` : user.email;
+    const req = {
+      id: Date.now().toString(),
+      instructorName,
+      instructorEmail: user.email,
+      courseName: c,
+      courseCode: '',
+      type: 'link',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    const all = JSON.parse(localStorage.getItem('courseLinkRequests') || '[]');
+    all.push(req);
+    localStorage.setItem('courseLinkRequests', JSON.stringify(all));
+    setMyCourseRequests(prev => [...prev, req]);
     setCourseInput('');
+    const notifs = JSON.parse(localStorage.getItem('notifications') || '[]');
+    notifs.push({ id: (Date.now() + 1).toString(), userId: 'admin@guc.edu.eg', message: `${instructorName} requested to link course "${c}" to their profile.`, read: false, createdAt: new Date().toISOString() });
+    localStorage.setItem('notifications', JSON.stringify(notifs));
   };
-  const removeCourse = (c) => {
-    if (c === 'Bachelor Project') return;
-    setCourses(prev => prev.filter(x => x !== c));
+
+  const requestCourseUnlink = (c) => {
+    const instructorName = user.firstName ? `${user.firstName} ${user.lastName}` : user.email;
+    const req = {
+      id: Date.now().toString(),
+      instructorName,
+      instructorEmail: user.email,
+      courseName: c,
+      courseCode: '',
+      type: 'unlink',
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    };
+    const all = JSON.parse(localStorage.getItem('courseLinkRequests') || '[]');
+    all.push(req);
+    localStorage.setItem('courseLinkRequests', JSON.stringify(all));
+    setMyCourseRequests(prev => [...prev, req]);
+    const notifs = JSON.parse(localStorage.getItem('notifications') || '[]');
+    notifs.push({ id: (Date.now() + 1).toString(), userId: 'admin@guc.edu.eg', message: `${instructorName} requested to unlink course "${c}" from their profile.`, read: false, createdAt: new Date().toISOString() });
+    localStorage.setItem('notifications', JSON.stringify(notifs));
   };
 
   // ---------------- EMPLOYER HELPERS ----------------
@@ -518,7 +559,9 @@ const Profile = () => {
               <div className="h-36 w-36 overflow-hidden rounded-full border-4 border-emerald-100 shadow-md">
                 {profileImage
                   ? <img src={profileImage} alt="Profile" className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center bg-emerald-50 text-5xl">👤</div>
+                  : <div className="flex h-full w-full items-center justify-center rounded-full bg-emerald-100 text-3xl font-bold text-emerald-700">
+                      {(user.firstName?.[0] || user.companyName?.[0] || '?')}{user.lastName?.[0] || ''}
+                    </div>
                 }
               </div>
               <button
@@ -775,31 +818,70 @@ const Profile = () => {
                   </div>
 
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-500">Courses Taught</label>
-                    <p className="mb-2 text-xs text-slate-400">Bachelor Project is always linked and cannot be removed.</p>
+                    <label className="mb-1 block text-xs font-semibold uppercase tracking-widest text-slate-500">Courses</label>
+                    <p className="mb-3 text-xs text-slate-400">Course changes require admin approval. Bachelor Project is always linked.</p>
+
+                    {/* Current linked courses */}
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {courses.map(c => {
+                        const hasPendingUnlink = myCourseRequests.some(r => r.courseName === c && r.type === 'unlink' && r.status === 'pending');
+                        return (
+                          <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                            {c}
+                            {c !== 'Bachelor Project' ? (
+                              hasPendingUnlink
+                                ? <span className="ml-1 text-amber-500 text-[10px]">pending...</span>
+                                : <button onClick={() => requestCourseUnlink(c)} title="Request to unlink" className="ml-1 text-blue-400 transition hover:text-red-500">✕</button>
+                            ) : (
+                              <span className="text-blue-400 text-xs">🔒</span>
+                            )}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    {/* Request to link a new course */}
                     <div className="mb-3 flex gap-2">
-                      <input
+                      <select
                         value={courseInput}
                         onChange={e => setCourseInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCourse(); } }}
-                        placeholder="e.g. Data Structures"
                         className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm transition focus:border-emerald-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-                      />
-                      <button onClick={addCourse} className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500">
-                        Add
+                      >
+                        <option value="">Select course to request link...</option>
+                        {COURSES.filter(c =>
+                          !courses.includes(c) &&
+                          !myCourseRequests.some(r => r.courseName === c && r.type === 'link' && r.status === 'pending')
+                        ).map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                      <button
+                        onClick={requestCourseLink}
+                        disabled={!courseInput}
+                        className="rounded-2xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        Request Link
                       </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {courses.map(c => (
-                        <span key={c} className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
-                          {c}
-                          {c !== 'Bachelor Project'
-                            ? <button onClick={() => removeCourse(c)} className="text-blue-400 transition hover:text-red-500">✕</button>
-                            : <span className="text-blue-400 text-xs">🔒</span>
-                          }
-                        </span>
-                      ))}
-                    </div>
+
+                    {/* My requests and their statuses */}
+                    {myCourseRequests.length > 0 && (
+                      <div className="mt-3 space-y-1.5">
+                        <p className="text-xs font-semibold uppercase tracking-widest text-slate-400">My Requests</p>
+                        {[...myCourseRequests].reverse().map(r => (
+                          <div key={r.id} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-xs">
+                            <span className="text-slate-700">
+                              {r.type === 'link' ? '+ Link' : '− Unlink'} <strong>{r.courseName}</strong>
+                            </span>
+                            <span className={`rounded-full px-2 py-0.5 font-semibold capitalize ${
+                              r.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                              r.status === 'accepted' ? 'bg-emerald-100 text-emerald-700' :
+                              'bg-red-100 text-red-600'
+                            }`}>{r.status}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1376,97 +1458,129 @@ const Profile = () => {
 
         {/* ══ EMPLOYER SECTIONS ══ */}
         {user.role === 'employer' && (
-          <div className="space-y-8">
+          <div className="space-y-6">
 
-            {/* COMPANY BIO */}
+            {/* EDIT PANEL — all fields in one card */}
             {isEditing && (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-                <h3 className="text-2xl font-bold mb-5">Company Biography</h3>
-                <textarea
-                  value={companyBio}
-                  onChange={e => setCompanyBio(e.target.value)}
-                  rows={5}
-                  placeholder="Write company biography..."
-                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-                />
-                <button
-                  onClick={() => localStorage.setItem(`companyBio_${user.email}`, companyBio)}
-                  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
-                >
-                  Save Biography
-                </button>
-              </div>
-            )}
+              <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-100">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 text-emerald-600">
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-slate-900">Company Details</h3>
+                </div>
 
-            {/* COMPANY ADDRESS */}
-            {isEditing && (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-                <h3 className="text-2xl font-bold mb-5">Company Address</h3>
-                <input
-                  type="text"
-                  value={companyAddress}
-                  onChange={e => setCompanyAddress(e.target.value)}
-                  placeholder="Enter company address..."
-                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-                />
-                <div className="flex gap-3 mt-5">
-                  <button
-                    onClick={() => localStorage.setItem(`companyAddress_${user.email}`, companyAddress)}
-                    className="bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
-                  >
-                    Save Address
-                  </button>
-                  <button
-                    onClick={openGoogleMaps}
-                    className="bg-[#111827] hover:bg-black text-white px-6 py-3 rounded-xl font-semibold"
-                  >
-                    Open Google Maps
-                  </button>
+                <div className="space-y-5">
+                  {/* Bio */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Company Biography</label>
+                    <textarea
+                      value={companyBio}
+                      onChange={e => setCompanyBio(e.target.value)}
+                      rows={4}
+                      placeholder="Describe your company, culture, and what you're looking for..."
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-emerald-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                    />
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => localStorage.setItem(`companyBio_${user.email}`, companyBio)}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100" />
+
+                  {/* Address */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Company Address</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={companyAddress}
+                        onChange={e => setCompanyAddress(e.target.value)}
+                        placeholder="e.g. 123 Business St, Cairo, Egypt"
+                        className="flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-emerald-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                      />
+                      <button
+                        onClick={openGoogleMaps}
+                        title="Open in Google Maps"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:border-slate-300 hover:bg-white"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                          <circle cx="12" cy="10" r="3" /><path d="M12 2a8 8 0 00-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 00-8-8z" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => localStorage.setItem(`companyAddress_${user.email}`, companyAddress)}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-slate-100" />
+
+                  {/* Contact */}
+                  <div>
+                    <label className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-slate-400">Contact Information</label>
+                    <textarea
+                      value={companyContact}
+                      onChange={e => setCompanyContact(e.target.value)}
+                      rows={3}
+                      placeholder="Phone, email, LinkedIn, website..."
+                      className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-400 transition focus:border-emerald-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+                    />
+                    <div className="mt-2 flex justify-end">
+                      <button
+                        onClick={() => localStorage.setItem(`companyContact_${user.email}`, companyContact)}
+                        className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-emerald-500"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* CONTACT */}
-            {isEditing && (
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-                <h3 className="text-2xl font-bold mb-5">Contact Information</h3>
-                <textarea
-                  value={companyContact}
-                  onChange={e => setCompanyContact(e.target.value)}
-                  rows={4}
-                  placeholder="Add contact information..."
-                  className="w-full border border-gray-200 rounded-2xl p-4 outline-none focus:border-[#10b981]"
-                />
-                <button
-                  onClick={() => localStorage.setItem(`companyContact_${user.email}`, companyContact)}
-                  className="mt-5 bg-[#059669] hover:bg-[#047857] text-white px-6 py-3 rounded-xl font-semibold"
-                >
-                  Save Contact Info
-                </button>
-              </div>
-            )}
-
             {/* FAVORITES — always visible */}
-            <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-8">
-              <h3 className="text-2xl font-bold mb-5">Favorite Projects & Portfolios</h3>
+            <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-100">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4 text-amber-500">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-semibold text-slate-900">Saved Projects & Portfolios</h3>
+              </div>
               {favorites.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {favorites.map((fav, i) => (
-                    <div key={i} className="bg-[#f9fafb] border border-gray-100 rounded-2xl p-4 flex justify-between items-center">
-                      <div>
-                        <p className="font-semibold text-[#111827]">{fav.title || `${fav.firstName} ${fav.lastName}`}</p>
-                        <p className="text-gray-500 text-sm mt-1">{fav.course || 'Student Portfolio'}</p>
+                    <div key={i} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-slate-800">{fav.title || `${fav.firstName} ${fav.lastName}`}</p>
+                        <p className="text-xs text-slate-400">{fav.course || 'Student Portfolio'}</p>
                       </div>
                       <button
                         onClick={() => setFavorites(prev => prev.filter((_, idx) => idx !== i))}
-                        className="text-red-500 text-sm font-semibold"
+                        className="ml-4 shrink-0 rounded-lg px-3 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-50 hover:text-red-600"
                       >
                         Remove
                       </button>
                     </div>
                   ))}
                 </div>
-              ) : <p className="text-gray-400">No favorites added yet.</p>}
+              ) : (
+                <p className="text-sm italic text-slate-400">No favorites saved yet.</p>
+              )}
             </div>
 
           </div>

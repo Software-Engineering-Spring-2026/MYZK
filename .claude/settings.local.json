@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Omarm\\\\MYZK\\\\src\" -Recurse -Filter \"*.jsx\")",
+      "Bash(Select-Object -ExpandProperty FullName)"
+    ]
+  }
+}

@@ -2,12 +2,12 @@ import { Link, useParams } from 'react-router-dom';
 import PageHeader from '../components/PageHeader';
 
 const MOCK_INSTRUCTORS = [
-  { userId: 'u4', email: 'dr.ali@guc.com',    firstName: 'Ali',    lastName: 'Mahmoud', subject: 'Data Structures',      status: 'accepted' },
-  { userId: 'u5', email: 'dr.salma@guc.com',  firstName: 'Salma',  lastName: 'Hassan',  subject: 'Operating Systems',    status: 'accepted' },
-  { userId: 'u6', email: 'dr.khaled@guc.com', firstName: 'Khaled', lastName: 'Mostafa', subject: 'Machine Learning',     status: 'accepted' },
-  { userId: 'u7', email: 'dr.nour@guc.com',   firstName: 'Nour',   lastName: 'Adel',    subject: 'Database Systems',     status: 'pending'  },
-  { userId: 'u8', email: 'dr.youssef@guc.com',firstName: 'Youssef',lastName: 'Tarek',   subject: 'Computer Networks',   status: 'accepted' },
-  { userId: 'u9', email: 'dr.mona@guc.com',   firstName: 'Mona',   lastName: 'Fathy',   subject: 'Artificial Intelligence', status: 'accepted' },
+  { userId: 'ins-1', email: 'rania.mansour@guc.edu.eg',  firstName: 'Rania',   lastName: 'Mansour', subject: 'Bachelor Project',           status: 'accepted' },
+  { userId: 'ins-2', email: 'tarek.sobhy@guc.edu.eg',    firstName: 'Tarek',   lastName: 'Sobhy',   subject: 'Database Systems',           status: 'accepted' },
+  { userId: 'ins-3', email: 'hana.elgazzar@guc.edu.eg',  firstName: 'Hana',    lastName: 'Elgazzar',subject: 'Machine Learning',           status: 'accepted' },
+  { userId: 'ins-4', email: 'karim.wahba@guc.edu.eg',    firstName: 'Karim',   lastName: 'Wahba',   subject: 'Computer Networks',          status: 'accepted' },
+  { userId: 'ins-5', email: 'dina.salah@guc.edu.eg',     firstName: 'Dina',    lastName: 'Salah',   subject: 'Artificial Intelligence',    status: 'accepted' },
+  { userId: 'ins-6', email: 'mostafa.aly@guc.edu.eg',    firstName: 'Mostafa', lastName: 'Aly',     subject: 'Embedded Systems',           status: 'accepted' },
 ];
 
 function InstructorProfile() {

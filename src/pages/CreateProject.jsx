@@ -5,16 +5,16 @@ import PageHeader from "../components/PageHeader";
 const COURSES = [
   "Bachelor Project",
   "Software Engineering",
+  "Database Systems",
   "Operating Systems",
   "Machine Learning",
-  "Embedded Systems",
-  "Database Systems",
-  "Computer Networks",
   "Artificial Intelligence",
-  "Mobile Development",
+  "Computer Networks",
+  "Data Structures & Algorithms",
+  "Mobile Application Development",
   "Cyber Security",
-  "Data Structures",
-  "Algorithms",
+  "Embedded Systems",
+  "Web Application Development",
 ];
 
 function CreateProject() {

@@ -241,6 +241,13 @@ const Register = () => {
                 value={formData.email}
                 placeholder="jane@example.com"
                 onChange={handleChange}
+                onBlur={() => {
+                  if (!formData.email) return;
+                  const users = JSON.parse(localStorage.getItem("users") || "[]");
+                  if (users.some(u => u.email === formData.email)) {
+                    setErrors(prev => ({ ...prev, email: "This email is already registered." }));
+                  }
+                }}
                 className={`w-full border rounded-xl px-4 py-3 text-slate-900 placeholder-slate-400 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 ${
                   errors.email ? "border-red-400 focus:ring-red-300/40" : "border-slate-200 focus:ring-emerald-500/50"
                 }`}

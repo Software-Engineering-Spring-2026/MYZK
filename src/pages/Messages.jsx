@@ -130,7 +130,7 @@ export default function Messages() {
           <div className="flex h-full">
 
             {/* ── SIDEBAR ── */}
-            <div className="flex w-72 shrink-0 flex-col border-r border-slate-100">
+            <div className={`${selectedEmail ? 'hidden sm:flex' : 'flex'} w-full sm:w-72 shrink-0 flex-col border-r border-slate-100`}>
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
                 <div>
@@ -229,7 +229,7 @@ export default function Messages() {
             </div>
 
             {/* ── CHAT AREA ── */}
-            <div className="flex flex-1 flex-col min-w-0">
+            <div className={`${selectedEmail ? 'flex' : 'hidden sm:flex'} flex-1 flex-col min-w-0`}>
               {!selectedEmail ? (
                 <div className="flex flex-1 items-center justify-center">
                   <div className="text-center">
@@ -242,6 +242,15 @@ export default function Messages() {
                 <>
                   {/* Chat header */}
                   <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+                    <button
+                      onClick={() => setSelectedEmail(null)}
+                      className="sm:hidden flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-500 transition hover:bg-slate-50"
+                      title="Back to conversations"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                        <path d="M19 12H5M12 5l-7 7 7 7" />
+                      </svg>
+                    </button>
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
                       {recipientName[0]?.toUpperCase()}
                     </div>

@@ -21,14 +21,7 @@ const Home = () => {
     const saved = localStorage.getItem('notifications');
     const currentEmail = JSON.parse(localStorage.getItem('user'))?.email || '';
     if (saved) return JSON.parse(saved);
-    return [
-      { id: 1, text: 'Instructor Ali commented on your B+ Tree project', read: false, userId: currentEmail },
-      { id: 2, text: 'New internship posted: Backend Intern at Telda', read: false, userId: currentEmail },
-      { id: 3, text: 'Your portfolio was viewed by 5 employers today', read: true, userId: currentEmail },
-      { id: 4, text: 'You got a new private message', read: false, userId: currentEmail },
-      { id: 5, text: 'Your teammate uploaded a new thesis draft', read: false, userId: currentEmail },
-      { id: 6, text: 'Employer viewed your student portfolio', read: true, userId: currentEmail },
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -45,6 +38,19 @@ const Home = () => {
     if (!user) navigate('/login');
   }, [user, navigate]);
 
+  const closeAllFilters = () => {
+    setShowProjectFilter(false);
+    setShowInternshipFilter(false);
+    setShowInternshipSort(false);
+    setShowProjectSort(false);
+    setShowStudentFilter(false);
+  };
+
+  useEffect(() => {
+    window.addEventListener('scroll', closeAllFilters, true);
+    return () => window.removeEventListener('scroll', closeAllFilters, true);
+  }, []);
+
   if (!user) return null;
 
   // ---------------- SEARCH STATES ----------------
@@ -53,6 +59,18 @@ const Home = () => {
   const projectFilterBtnRef = useRef(null);
   const [filterBtnPos, setFilterBtnPos] = useState({ top: 0, left: 0, width: 0 });
   const filterHideTimeout = useRef(null);
+  const internshipFilterTimeout = useRef(null);
+  const internshipSortTimeout = useRef(null);
+  const projectSortTimeout = useRef(null);
+  const studentFilterTimeout = useRef(null);
+  const internshipFilterBtnRef = useRef(null);
+  const [internshipFilterPos, setInternshipFilterPos] = useState({ top: 0, left: 0 });
+  const internshipSortBtnRef = useRef(null);
+  const [internshipSortPos, setInternshipSortPos] = useState({ top: 0, left: 0 });
+  const projectSortBtnRef = useRef(null);
+  const [projectSortPos, setProjectSortPos] = useState({ top: 0, left: 0 });
+  const studentFilterBtnRef = useRef(null);
+  const [studentFilterPos, setStudentFilterPos] = useState({ top: 0, left: 0 });
   const [showInternshipSort, setShowInternshipSort] = useState(false);
   const [instructorSearch, setInstructorSearch] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
@@ -110,79 +128,79 @@ const [internshipForm, setInternshipForm] = useState({
 
   // ---------------- MOCK INSTRUCTORS ----------------
   const mockInstructors = [
-    { userId: 'u4', email: 'dr.ali@guc.com', firstName: 'Ali', lastName: 'Mahmoud', subject: 'Data Structures', status: 'accepted' },
-    { userId: 'u5', email: 'dr.salma@guc.com', firstName: 'Salma', lastName: 'Hassan', subject: 'Operating Systems', status: 'accepted' },
-    { userId: 'u6', email: 'dr.khaled@guc.com', firstName: 'Khaled', lastName: 'Mostafa', subject: 'Machine Learning', status: 'accepted' },
-    { userId: 'u7', email: 'dr.nour@guc.com', firstName: 'Nour', lastName: 'Adel', subject: 'Database Systems', status: 'pending' },
-    { userId: 'u8', email: 'dr.youssef@guc.com', firstName: 'Youssef', lastName: 'Tarek', subject: 'Computer Networks', status: 'accepted' },
-    { userId: 'u9', email: 'dr.mona@guc.com', firstName: 'Mona', lastName: 'Fathy', subject: 'Artificial Intelligence', status: 'accepted' },
+    { userId: 'ins-1', email: 'rania.mansour@guc.edu.eg', firstName: 'Rania', lastName: 'Mansour', subject: 'Bachelor Project', status: 'accepted' },
+    { userId: 'ins-2', email: 'tarek.sobhy@guc.edu.eg', firstName: 'Tarek', lastName: 'Sobhy', subject: 'Database Systems', status: 'accepted' },
+    { userId: 'ins-3', email: 'hana.elgazzar@guc.edu.eg', firstName: 'Hana', lastName: 'Elgazzar', subject: 'Machine Learning', status: 'accepted' },
+    { userId: 'ins-4', email: 'karim.wahba@guc.edu.eg', firstName: 'Karim', lastName: 'Wahba', subject: 'Computer Networks', status: 'accepted' },
+    { userId: 'ins-5', email: 'dina.salah@guc.edu.eg', firstName: 'Dina', lastName: 'Salah', subject: 'Artificial Intelligence', status: 'accepted' },
+    { userId: 'ins-6', email: 'mostafa.aly@guc.edu.eg', firstName: 'Mostafa', lastName: 'Aly', subject: 'Embedded Systems', status: 'accepted' },
   ];
 
   // ---------------- MOCK INTERNSHIPS ----------------
 const mockInternships = [
   {
-    id: 1, title: 'Frontend Developer Intern', company: 'Google', location: 'Cairo',
-    duration: '3 Months', postedDate: '2026-05-01', deadline: '2026-06-30',
+    id: 'mock-int-1', title: 'Backend Engineer Intern', company: 'Paymob', location: 'New Cairo',
+    duration: '3 Months', postedDate: '2026-04-20', deadline: '2026-06-15',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Build and maintain UI components, collaborate with designers, write clean reusable React code, participate in code reviews.',
-    skills: 'React, JavaScript, CSS, HTML, Git',
+    responsibilities: 'Build and maintain RESTful payment APIs, collaborate with the core engineering team on transaction processing, write unit and integration tests.',
+    skills: 'Node.js, REST APIs, PostgreSQL, Git',
     languages: 'JavaScript, TypeScript',
   },
   {
-    id: 2, title: 'Backend Engineer Intern', company: 'Microsoft', location: 'Smart Village',
-    duration: '6 Months', postedDate: '2026-05-12', deadline: '2026-07-31',
+    id: 'mock-int-2', title: 'Data Engineering Intern', company: 'Paymob', location: 'New Cairo',
+    duration: '6 Months', postedDate: '2026-04-25', deadline: '2026-07-01',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Develop and optimize RESTful APIs, work with Azure cloud services, assist in database design and query optimization.',
-    skills: 'Node.js, REST APIs, SQL, Azure, Git',
-    languages: 'Python, C#, JavaScript',
+    responsibilities: 'Design and maintain ETL pipelines, build dashboards for transaction analytics, work with the data team on schema design.',
+    skills: 'Python, SQL, Apache Spark, dbt',
+    languages: 'Python, SQL',
   },
   {
-    id: 3, title: 'Software Engineering Intern', company: 'Amazon', location: 'Remote',
-    duration: '2 Months', postedDate: '2026-04-22', deadline: '2026-04-30',
+    id: 'mock-int-3', title: 'Software Engineering Intern', company: 'VOIS', location: 'Smart Village',
+    duration: '3 Months', postedDate: '2026-05-01', deadline: '2026-06-30',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Assist in developing scalable software systems, write unit tests, document code, and contribute to design discussions.',
-    skills: 'Java, Data Structures, Algorithms, Git',
+    responsibilities: 'Develop internal tooling for the telecom platform, participate in agile sprints, write documentation for new features.',
+    skills: 'Java, Spring Boot, SQL, Git',
     languages: 'Java, Python',
   },
   {
-    id: 4, title: 'AI/ML Intern', company: 'OpenAI', location: 'Remote',
-    duration: '4 Months', postedDate: '2026-05-18', deadline: '2026-08-15',
+    id: 'mock-int-4', title: 'Mobile Developer Intern', company: 'Fawry', location: 'Heliopolis',
+    duration: '3 Months', postedDate: '2026-05-05', deadline: '2026-06-20',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Research and implement machine learning models, analyze datasets, write reports on model performance and improvements.',
-    skills: 'Python, TensorFlow, PyTorch, Statistics',
-    languages: 'Python',
-  },
-  {
-    id: 5, title: 'Full Stack Intern', company: 'Vodafone', location: 'New Cairo',
-    duration: '6 Months', postedDate: '2026-03-30', deadline: '2026-04-01',
-    status: 'Currently Hiring', archived: false,
-    responsibilities: 'Develop end-to-end web features, integrate backend services with React frontend, maintain existing codebases.',
-    skills: 'React, Node.js, MongoDB, REST APIs',
-    languages: 'JavaScript, TypeScript',
-  },
-  {
-    id: 6, title: 'Mobile Developer Intern', company: 'Instabug', location: 'Cairo',
-    duration: '3 Months', postedDate: '2026-04-10', deadline: '2026-05-01',
-    status: 'Currently Hiring', archived: false,
-    responsibilities: 'Develop cross-platform mobile features using Flutter, fix UI/UX bugs, write unit tests for mobile components.',
-    skills: 'Flutter, Dart, Firebase, Mobile UI',
+    responsibilities: 'Maintain and enhance Fawry\'s consumer-facing Flutter app, implement new payment flows, fix reported UI bugs.',
+    skills: 'Flutter, Dart, Firebase, REST APIs',
     languages: 'Dart',
   },
   {
-    id: 7, title: 'Cyber Security Intern', company: 'Orange', location: '6th October',
-    duration: '5 Months', postedDate: '2026-05-20', deadline: '2026-09-01',
+    id: 'mock-int-5', title: 'Data Science Intern', company: 'Synapse Analytics', location: 'Remote',
+    duration: '4 Months', postedDate: '2026-05-08', deadline: '2026-07-31',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Perform vulnerability assessments, monitor network traffic, assist in security incident response and reporting.',
-    skills: 'Network Security, Linux, Penetration Testing, SIEM',
-    languages: 'Python, Bash',
+    responsibilities: 'Build predictive models for client analytics dashboards, clean and explore datasets, present findings to project leads.',
+    skills: 'Python, Pandas, Scikit-learn, Tableau',
+    languages: 'Python',
   },
   {
-    id: 8, title: 'Cloud Engineer Intern', company: 'IBM', location: 'Smart Village',
-    duration: '2 Months', postedDate: '2026-02-15', deadline: '2026-03-31',
+    id: 'mock-int-6', title: 'Embedded Systems Intern', company: 'Valeo', location: '6th October',
+    duration: '6 Months', postedDate: '2026-04-15', deadline: '2026-06-01',
     status: 'Currently Hiring', archived: false,
-    responsibilities: 'Deploy and manage cloud infrastructure on IBM Cloud, automate CI/CD pipelines, monitor system health and performance.',
-    skills: 'Cloud Computing, Docker, Kubernetes, CI/CD',
-    languages: 'Python, YAML, Bash',
+    responsibilities: 'Develop low-level firmware for automotive ECUs, write tests on AUTOSAR components, debug hardware/software integration issues.',
+    skills: 'C, AUTOSAR, CAN Bus, Embedded Linux',
+    languages: 'C, C++',
+  },
+  {
+    id: 'mock-int-7', title: 'Frontend Engineer Intern', company: 'Bosta', location: 'Cairo',
+    duration: '3 Months', postedDate: '2026-05-10', deadline: '2026-07-15',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Build shipment tracking UI components, integrate with logistics APIs, work with designers on mobile-first responsive layouts.',
+    skills: 'React, TypeScript, CSS, REST APIs',
+    languages: 'JavaScript, TypeScript',
+  },
+  {
+    id: 'mock-int-8', title: 'Full Stack Intern', company: 'Swvl', location: 'New Cairo',
+    duration: '6 Months', postedDate: '2026-04-30', deadline: '2026-06-28',
+    status: 'Currently Hiring', archived: false,
+    responsibilities: 'Develop features across the ride-sharing platform stack, maintain Node.js microservices, contribute to React dashboard improvements.',
+    skills: 'React, Node.js, MongoDB, Docker',
+    languages: 'JavaScript, TypeScript',
   },
 ];
 
@@ -216,41 +234,71 @@ const filteredInternships = [...allInternships]
 
   // ---------------- MOCK PROJECTS ----------------
   const mockProjects = [
-    { id: 'p1', title: 'Smart Campus Navigation System', description: 'AR-based navigation system for GUC students.', course: 'Bachelor Project', createdAt: '2026-04-10', rating: 5, creatorId: 'demo' },
-    { id: 'p2', title: 'AI Resume Analyzer', description: 'Machine learning system for evaluating CVs.', course: 'Software Engineering', createdAt: '2026-03-22', rating: 4, creatorId: 'demo' },
-    { id: 'p3', title: 'Hospital Queue Management', description: 'Distributed system for patient scheduling.', course: 'Operating Systems', createdAt: '2026-05-01', rating: 3, creatorId: 'demo' },
-    { id: 'p4', title: 'E-Commerce Recommendation Engine', description: 'Recommendation system using collaborative filtering.', course: 'Machine Learning', createdAt: '2026-02-18', rating: 5, creatorId: 'demo' },
-    { id: 'p5', title: 'Autonomous Delivery Robot', description: 'Embedded systems project for indoor delivery robots.', course: 'Embedded Systems', createdAt: '2026-01-30', rating: 2, creatorId: 'demo' },
+    {
+      id: 'project-seeded-1', title: 'GUC Lost & Found Platform',
+      description: 'A full-stack web app that lets GUC students report lost items and claim found ones with real-time notifications.',
+      course: 'Bachelor Project', createdAt: '2026-03-15', rating: 4,
+      creatorId: 'layla.hassan@student.guc.edu.eg', creatorName: 'Layla Hassan',
+      isPublic: true, flagged: false, tags: ['React', 'Node.js', 'PostgreSQL'],
+    },
+    {
+      id: 'project-seeded-2', title: 'Smart Irrigation Controller',
+      description: 'An IoT system using soil-moisture sensors and an Arduino controller to automate irrigation scheduling.',
+      course: 'Embedded Systems', createdAt: '2026-02-28', rating: 5,
+      creatorId: 'omar.farouk@student.guc.edu.eg', creatorName: 'Omar Farouk',
+      isPublic: true, flagged: false, tags: ['Java', 'Arduino', 'IoT'],
+    },
+    {
+      id: 'project-seeded-3', title: 'Arabic Sentiment Analyzer',
+      description: 'A fine-tuned transformer model for multi-class sentiment analysis on Arabic social media text.',
+      course: 'Machine Learning', createdAt: '2026-04-05', rating: 4,
+      creatorId: 'nour.sherif@student.guc.edu.eg', creatorName: 'Nour Sherif',
+      isPublic: true, flagged: true, tags: ['Python', 'PyTorch', 'NLP'],
+    },
+    {
+      id: 'project-seeded-4', title: 'GUC Room Booking App',
+      description: 'A Flutter mobile app for reserving study rooms and labs on campus with live availability.',
+      course: 'Mobile Application Development', createdAt: '2026-04-18', rating: 3,
+      creatorId: 'youssef.khaled@student.guc.edu.eg', creatorName: 'Youssef Khaled',
+      isPublic: true, flagged: false, tags: ['Flutter', 'Firebase', 'Dart'],
+    },
+    {
+      id: 'project-seeded-5', title: 'Campus Clinic Scheduler',
+      description: 'A web portal for booking appointments at the GUC clinic with doctor availability and SMS reminders.',
+      course: 'Database Systems', createdAt: '2026-05-02', rating: 0,
+      creatorId: 'layla.hassan@student.guc.edu.eg', creatorName: 'Layla Hassan',
+      isPublic: false, flagged: false, tags: ['React', 'PostgreSQL', 'Node.js'],
+    },
   ];
 
   const storedProjects = JSON.parse(localStorage.getItem('projects')) || [];
 
   // ---------------- MOCK STUDENTS ----------------
   const mockStudents = [
-    { firstName: 'Ahmed', lastName: 'Karam', email: 'ahmed@student.guc.edu.eg', role: 'student', major: 'Computer Science', skills: ['React', 'Node.js', 'MongoDB'] },
-    { firstName: 'Sara', lastName: 'Mohamed', email: 'sara@student.guc.edu.eg', role: 'student', major: 'Media Engineering', skills: ['UI/UX', 'Figma', 'Frontend'] },
-    { firstName: 'Omar', lastName: 'Khaled', email: 'omar@student.guc.edu.eg', role: 'student', major: 'Computer Engineering', skills: ['Java', 'Spring Boot', 'SQL'] },
-    { firstName: 'Mariam', lastName: 'Tarek', email: 'mariam@student.guc.edu.eg', role: 'student', major: 'Computer Science', skills: ['Python', 'Machine Learning', 'TensorFlow'] },
-    { firstName: 'Yassin', lastName: 'Hesham', email: 'yassin@student.guc.edu.eg', role: 'student', major: 'Computer Engineering', skills: ['Cyber Security', 'Networking', 'Linux'] },
-    { firstName: 'Lina', lastName: 'Adel', email: 'lina@student.guc.edu.eg', role: 'student', major: 'Media Engineering', skills: ['Flutter', 'Firebase', 'Mobile Development'] },
+    { firstName: 'Layla', lastName: 'Hassan', email: 'layla.hassan@student.guc.edu.eg', role: 'student', major: 'Computer Science', skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'] },
+    { firstName: 'Omar', lastName: 'Farouk', email: 'omar.farouk@student.guc.edu.eg', role: 'student', major: 'Computer Engineering', skills: ['Java', 'Spring Boot', 'SQL', 'Arduino'] },
+    { firstName: 'Nour', lastName: 'Sherif', email: 'nour.sherif@student.guc.edu.eg', role: 'student', major: 'Media Engineering', skills: ['Python', 'PyTorch', 'NLP', 'Data Analysis'] },
+    { firstName: 'Youssef', lastName: 'Khaled', email: 'youssef.khaled@student.guc.edu.eg', role: 'student', major: 'Computer Science', skills: ['Flutter', 'Firebase', 'Dart', 'React Native'] },
+    { firstName: 'Mariam', lastName: 'Samy', email: 'mariam.samy@student.guc.edu.eg', role: 'student', major: 'Computer Science', skills: ['Python', 'Machine Learning', 'TensorFlow', 'Keras'] },
+    { firstName: 'Adam', lastName: 'Ashraf', email: 'adam.ashraf@student.guc.edu.eg', role: 'student', major: 'Computer Engineering', skills: ['Cyber Security', 'Linux', 'Penetration Testing'] },
   ];
 
   const allStudents = [...mockStudents, ...users.filter((u) => u.role === 'student')];
   const allProjects = [...mockProjects, ...storedProjects];
 
   const mockCourses = [
-    { name: 'Data Structures', code: 'CSEN301' },
-    { name: 'Algorithms', code: 'CSEN302' },
-    { name: 'Operating Systems', code: 'CSEN401' },
-    { name: 'Database Systems', code: 'CSEN403' },
-    { name: 'Software Engineering', code: 'CSEN703' },
-    { name: 'Machine Learning', code: 'CSEN902' },
-    { name: 'Computer Networks', code: 'CSEN502' },
-    { name: 'Artificial Intelligence', code: 'CSEN901' },
-    { name: 'Mobile Development', code: 'CSEN606' },
-    { name: 'Cyber Security', code: 'CSEN603' },
-    { name: 'Embedded Systems', code: 'CSEN503' },
-    { name: 'Bachelor Project', code: 'CSEN901P' },
+    { name: 'Bachelor Project', code: 'CSEN 700' },
+    { name: 'Software Engineering', code: 'CSEN 603' },
+    { name: 'Database Systems', code: 'CSEN 604' },
+    { name: 'Operating Systems', code: 'CSEN 602' },
+    { name: 'Machine Learning', code: 'CSEN 702' },
+    { name: 'Artificial Intelligence', code: 'CSEN 701' },
+    { name: 'Computer Networks', code: 'CSEN 601' },
+    { name: 'Data Structures & Algorithms', code: 'CSEN 301' },
+    { name: 'Mobile Application Development', code: 'CSEN 606' },
+    { name: 'Cyber Security', code: 'CSEN 703' },
+    { name: 'Embedded Systems', code: 'CSEN 503' },
+    { name: 'Web Application Development', code: 'CSEN 605' },
   ];
 
   // ---------------- FILTERING ----------------
@@ -300,7 +348,7 @@ const filteredProjects = allProjects
     );
 
   // ---------------- HELPERS ----------------
-  const myNotifications = notifications.filter(n => !n.userId || n.userId === user?.email);
+  const myNotifications = notifications.filter(n => n.userId === user?.email);
   const toggleRead = (id) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: !n.read } : n));
   const unreadCount = myNotifications.filter((n) => !n.read).length;
 
@@ -400,9 +448,19 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
     className="flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
   />
 
-  <div className="relative" onMouseLeave={() => setShowInternshipFilter(false)}>
+  <div
+    ref={internshipFilterBtnRef}
+    className="relative"
+    onMouseEnter={() => {
+      clearTimeout(internshipFilterTimeout.current);
+      setShowInternshipSort(false); setShowProjectFilter(false); setShowProjectSort(false); setShowStudentFilter(false);
+      const rect = internshipFilterBtnRef.current?.getBoundingClientRect();
+      if (rect) setInternshipFilterPos({ top: rect.bottom + 8, left: rect.right - 256 });
+      setShowInternshipFilter(true);
+    }}
+    onMouseLeave={() => { internshipFilterTimeout.current = setTimeout(() => setShowInternshipFilter(false), 150); }}
+  >
     <button
-      onMouseEnter={() => setShowInternshipFilter(true)}
       className={`flex min-w-[140px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${(internshipCompanyFilter || internshipDurationFilter) ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : showInternshipFilter ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4 shrink-0">
@@ -415,45 +473,20 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
         <polyline points="6 9 12 15 18 9" />
       </svg>
     </button>
-    {showInternshipFilter && (
-      <>
-        <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
-        <div className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Company</p>
-          <input
-            type="text"
-            value={internshipCompanyFilter}
-            onChange={(e) => setInternshipCompanyFilter(e.target.value)}
-            placeholder="e.g. Google"
-            className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
-          />
-          <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Duration</p>
-          <div className="flex flex-col gap-1">
-            {['', '2 Months', '3 Months', '4 Months', '5 Months', '6 Months'].map((d) => (
-              <button
-                key={d}
-                onClick={() => setInternshipDurationFilter(d)}
-                className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition hover:bg-slate-50 ${internshipDurationFilter === d ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
-              >
-                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${internshipDurationFilter === d ? 'bg-emerald-500' : 'bg-slate-200'}`} />
-                {d || 'All Durations'}
-              </button>
-            ))}
-          </div>
-          {(internshipCompanyFilter || internshipDurationFilter) && (
-            <button
-              onClick={() => { setInternshipCompanyFilter(''); setInternshipDurationFilter(''); }}
-              className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
-            >
-              Clear Filters
-            </button>
-          )}
-        </div>
-      </>
-    )}
   </div>
 
-          <div className="relative" onMouseEnter={() => setShowInternshipSort(true)} onMouseLeave={() => setShowInternshipSort(false)}>
+          <div
+            ref={internshipSortBtnRef}
+            className="relative"
+            onMouseEnter={() => {
+              clearTimeout(internshipSortTimeout.current);
+              setShowInternshipFilter(false); setShowProjectFilter(false); setShowProjectSort(false); setShowStudentFilter(false);
+              const rect = internshipSortBtnRef.current?.getBoundingClientRect();
+              if (rect) setInternshipSortPos({ top: rect.bottom + 8, left: rect.right - 192 });
+              setShowInternshipSort(true);
+            }}
+            onMouseLeave={() => { internshipSortTimeout.current = setTimeout(() => setShowInternshipSort(false), 150); }}
+          >
             <button
               className={`flex min-w-[160px] items-center justify-between gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold transition ${showInternshipSort ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}
             >
@@ -465,26 +498,6 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
-            {showInternshipSort && (
-              <>
-              <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
-              <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                {[
-                  { value: 'newest', label: 'Newest First' },
-                  { value: 'oldest', label: 'Oldest First' },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => { setInternshipSort(opt.value); setShowInternshipSort(false); }}
-                    className={`flex w-full items-center gap-2 px-4 py-3 text-sm transition hover:bg-slate-50 ${internshipSort === opt.value ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${internshipSort === opt.value ? 'bg-emerald-500' : 'bg-transparent'}`} />
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              </>
-            )}
           </div>
         </div>
 
@@ -556,7 +569,18 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
               </div>
             </div>
           )) : (
-            <p className="text-sm italic text-slate-400">No internships found.</p>
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <span className="text-4xl">📋</span>
+              <p className="font-medium text-slate-600">No internships match your search.</p>
+              {(internshipSearch || internshipCompanyFilter || internshipDurationFilter) && (
+                <button
+                  onClick={() => { setInternshipSearch(''); setInternshipCompanyFilter(''); setInternshipDurationFilter(''); }}
+                  className="rounded-full border border-red-200 bg-red-50 px-4 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -586,7 +610,7 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
         </label>
 
         <textarea
-          defaultValue={coverLetter}
+          value={coverLetter}
           maxLength={250}
           onChange={(e) => setCoverLetter(e.target.value)}
           placeholder="Explain briefly why you fit this role..."
@@ -632,6 +656,13 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
               coverLetter
             );
 
+            const allAppUsers = JSON.parse(localStorage.getItem('users') || '[]');
+            const employer = allAppUsers.find(u => u.role === 'employer' && u.companyName === selectedInternship.company);
+            if (employer) {
+              const studentName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email;
+              notifyUser(employer.email, `${studentName} applied to your "${selectedInternship.title}" internship.`);
+            }
+
             setShowCoverLetterModal(false);
             setSelectedInternship(null);
             setCoverLetter('');
@@ -650,36 +681,15 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
     </div>
   </div>
 )}
-      {/* LOWER CARDS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-emerald-600">Recommended Projects</p>
-          <p className="text-lg font-semibold text-slate-900">University HR Management System</p>
-          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Project Details</p>
-            <p className="text-sm text-slate-700">Full-stack HR platform for managing employee records, recruitment workflows, payroll systems, and analytics.</p>
-          </div>
-        </div>
-        <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Active Applications</p>
-          <p className="text-lg font-semibold text-slate-900">PulseCare Remote Clinic — Pending</p>
-          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Application Status</p>
-            <p className="text-sm text-slate-700">Your internship application is currently under review by the company recruitment team.</p>
-          </div>
-        </div>
-      </div>
     </div>
     );
   };
 
   const InstructorDashboard = () => {
-    const recommendedProjects = [
-      { id: 1, title: 'AI Resume Analyzer', field: 'Machine Learning', students: 3 },
-      { id: 2, title: 'Smart Hospital System', field: 'Software Engineering', students: 5 },
-      { id: 3, title: 'Campus Navigation App', field: 'Mobile Development', students: 2 },
-      { id: 4, title: 'Cyber Security Threat Detector', field: 'Cyber Security', students: 4 },
-    ];
+    const recommendedProjects = allProjects
+      .filter(p => !p.flagged && p.isPublic !== false)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 4);
     const filteredCourses = mockCourses.filter(c =>
       `${c.name} ${c.code}`.toLowerCase().includes(courseSearch.toLowerCase())
     );
@@ -724,18 +734,28 @@ const toggleSetting = (key) => setSettings((prev) => ({ ...prev, [key]: !prev[ke
             <h2 className="text-xl font-semibold text-slate-900">Instructor Review Panel</h2>
           </div>
           <h3 className="mb-4 text-sm font-semibold text-slate-700">Recommended Projects</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendedProjects.map((project) => (
-              <div key={project.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-                <p className="font-semibold text-slate-900">{project.title}</p>
-                <p className="mt-1 text-sm text-emerald-600">{project.field}</p>
-                <p className="mt-2 text-xs text-slate-400">Interested Students: {project.students}</p>
-                <button onClick={() => navigate(`/project/${project.id}`)} className="mt-4 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">
-                  View Project
-                </button>
-              </div>
-            ))}
-          </div>
+          {recommendedProjects.length === 0 ? (
+            <p className="text-sm italic text-slate-400">No public projects yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {recommendedProjects.map((project) => (
+                <div key={project.id} onClick={() => navigate(`/project/${project.id}`)} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+                  <p className="font-semibold text-slate-900">{project.title}</p>
+                  {project.course && <span className="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{project.course}</span>}
+                  <div className="mt-2 flex items-center gap-0.5">
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} viewBox="0 0 24 24" className={`h-3 w-3 ${s <= (project.rating||0) ? 'fill-amber-400' : 'fill-slate-200'}`}>
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                  </div>
+                  <button onClick={e => { e.stopPropagation(); navigate(`/project/${project.id}`); }} className="mt-4 rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">
+                    View Project
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -814,12 +834,10 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
 };
 
   const EmployerDashboard = () => {
-    const recommendedProjects = [
-      { id: 1, title: 'AI Resume Analyzer', field: 'Machine Learning', companyFit: 'Great for AI recruitment systems', rating: 5 },
-      { id: 2, title: 'Smart Hospital System', field: 'Software Engineering', companyFit: 'Useful for healthcare platforms', rating: 4 },
-      { id: 3, title: 'Campus Navigation App', field: 'Mobile Development', companyFit: 'Strong mobile UI/UX implementation', rating: 4 },
-      { id: 4, title: 'Cyber Security Threat Detector', field: 'Cyber Security', companyFit: 'Relevant for enterprise security', rating: 5 },
-    ];
+    const recommendedProjects = allProjects
+      .filter(p => !p.flagged && p.isPublic !== false)
+      .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+      .slice(0, 4);
     const allEmpUsers = JSON.parse(localStorage.getItem('users')) || [];
     const allEmpProjects = JSON.parse(localStorage.getItem('projects')) || [];
     const totalInternshipsOffered = employerInternships.length;
@@ -1108,8 +1126,8 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
           ? [...applicants].sort((a, b) => b.projectCount - a.projectCount)
           : applicants;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-            <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" style={{maxHeight: '80vh'}}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={() => setSelectedInternshipForApplicants(null)}>
+            <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl" style={{maxHeight: '80vh'}} onClick={(e) => e.stopPropagation()}>
               <div className="flex shrink-0 items-center justify-between bg-emerald-600 px-6 py-4 text-white">
                 <div>
                   <h3 className="font-semibold">Applicants</h3>
@@ -1226,30 +1244,33 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
         {/* RECOMMENDED PROJECTS */}
         <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
           <h2 className="mb-6 text-xl font-semibold text-slate-900">Recommended Student Projects</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {recommendedProjects.map((project) => (
-              <div key={project.id} className="rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-900">{project.title}</p>
-                    <p className="mt-1 text-sm text-emerald-600">{project.field}</p>
+          {recommendedProjects.length === 0 ? (
+            <p className="text-sm italic text-slate-400">No public projects yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {recommendedProjects.map((project) => (
+                <div key={project.id} onClick={() => navigate(`/project/${project.id}`)} className="cursor-pointer rounded-2xl border border-slate-100 bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-900">{project.title}</p>
+                      {project.course && <p className="mt-1 text-sm text-emerald-600">{project.course}</p>}
+                    </div>
+                    <div className="flex gap-0.5">
+                      {[1,2,3,4,5].map(s => (
+                        <svg key={s} viewBox="0 0 24 24" className={`h-4 w-4 ${s <= (project.rating||0) ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}>
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex gap-0.5">
-                    {[1,2,3,4,5].map(s => (
-                      <svg key={s} viewBox="0 0 24 24" className={`h-4 w-4 ${s <= project.rating ? 'fill-amber-400 text-amber-400' : 'fill-slate-200 text-slate-200'}`}>
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    ))}
+                  <p className="mt-3 text-sm text-slate-500">{project.description}</p>
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={e => { e.stopPropagation(); navigate(`/project/${project.id}`); }} className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">View Project</button>
                   </div>
                 </div>
-                <p className="mt-3 text-sm text-slate-500">{project.companyFit}</p>
-                <div className="mt-4 flex gap-2">
-                  <button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-emerald-500">View Project</button>
-                  <button className="rounded-full border border-emerald-200 px-4 py-1.5 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50">Contact Student</button>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1427,6 +1448,7 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
                     ref={projectFilterBtnRef}
                     onMouseEnter={() => {
                       clearTimeout(filterHideTimeout.current);
+                      setShowInternshipFilter(false); setShowInternshipSort(false); setShowProjectSort(false); setShowStudentFilter(false);
                       const rect = projectFilterBtnRef.current?.getBoundingClientRect();
                       if (rect) setFilterBtnPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
                       setShowProjectFilter(true);
@@ -1448,7 +1470,18 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
                     </button>
                   </div>
                   {/* Sort dropdown */}
-                  <div className="relative" onMouseEnter={() => setShowProjectSort(true)} onMouseLeave={() => setShowProjectSort(false)}>
+                  <div
+                    ref={projectSortBtnRef}
+                    className="relative"
+                    onMouseEnter={() => {
+                      clearTimeout(projectSortTimeout.current);
+                      setShowInternshipFilter(false); setShowInternshipSort(false); setShowProjectFilter(false); setShowStudentFilter(false);
+                      const rect = projectSortBtnRef.current?.getBoundingClientRect();
+                      if (rect) setProjectSortPos({ top: rect.bottom + 8, left: rect.left });
+                      setShowProjectSort(true);
+                    }}
+                    onMouseLeave={() => { projectSortTimeout.current = setTimeout(() => setShowProjectSort(false), 150); }}
+                  >
                     <button
                       className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition ${projectSortBy ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : showProjectSort ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
                     >
@@ -1458,29 +1491,6 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
                       </svg>
                       Sort
                     </button>
-                    {showProjectSort && (
-                      <>
-                      <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
-                      <div className="absolute left-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
-                        {[
-                          { value: '', label: 'Default' },
-                          { value: 'date_desc', label: 'Newest First' },
-                          { value: 'date_asc', label: 'Oldest First' },
-                          { value: 'rating_desc', label: 'Highest Rated' },
-                          { value: 'rating_asc', label: 'Lowest Rated' },
-                        ].map((opt) => (
-                          <button
-                            key={opt.value}
-                            onClick={() => { setProjectSortBy(opt.value); setShowProjectSort(false); }}
-                            className={`flex w-full items-center gap-2 px-4 py-3 text-xs transition hover:bg-slate-50 ${projectSortBy === opt.value ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
-                          >
-                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${projectSortBy === opt.value ? 'bg-emerald-500' : 'bg-transparent'}`} />
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                      </>
-                    )}
                   </div>
                 </>
               )}
@@ -1488,9 +1498,19 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
               {/* Students: Filter + Sort */}
               {discoverTab === 'students' && (
                 <>
-                  <div className="relative" onMouseLeave={() => setShowStudentFilter(false)}>
+                  <div
+                    ref={studentFilterBtnRef}
+                    className="relative"
+                    onMouseEnter={() => {
+                      clearTimeout(studentFilterTimeout.current);
+                      setShowInternshipFilter(false); setShowInternshipSort(false); setShowProjectFilter(false); setShowProjectSort(false);
+                      const rect = studentFilterBtnRef.current?.getBoundingClientRect();
+                      if (rect) setStudentFilterPos({ top: rect.bottom + 8, left: rect.left });
+                      setShowStudentFilter(true);
+                    }}
+                    onMouseLeave={() => { studentFilterTimeout.current = setTimeout(() => setShowStudentFilter(false), 150); }}
+                  >
                     <button
-                      onMouseEnter={() => setShowStudentFilter(true)}
                       className={`flex items-center gap-1.5 rounded-2xl border px-3 py-2.5 text-xs font-semibold transition ${(studentMajorFilter || studentSkillsFilter) ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : showStudentFilter ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-white text-slate-500 hover:bg-slate-50'}`}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
@@ -1499,37 +1519,6 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
                       Filter
                       {(studentMajorFilter || studentSkillsFilter) && <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />}
                     </button>
-                    {showStudentFilter && (
-                      <>
-                      <div className="absolute left-0 right-0 h-2" style={{ top: '100%' }} />
-                      <div className="absolute left-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Major</p>
-                        <input
-                          type="text"
-                          value={studentMajorFilter}
-                          onChange={(e) => setStudentMajorFilter(e.target.value)}
-                          placeholder="e.g. Computer Science"
-                          className="mb-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none"
-                        />
-                        <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Skill</p>
-                        <input
-                          type="text"
-                          value={studentSkillsFilter}
-                          onChange={(e) => setStudentSkillsFilter(e.target.value)}
-                          placeholder="e.g. React"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none"
-                        />
-                        {(studentMajorFilter || studentSkillsFilter) && (
-                          <button
-                            onClick={() => { setStudentMajorFilter(''); setStudentSkillsFilter(''); }}
-                            className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
-                          >
-                            Clear Filters
-                          </button>
-                        )}
-                      </div>
-                      </>
-                    )}
                   </div>
                   <button
                     onClick={() => setStudentSortByProjects(prev => prev === '' ? 'desc' : prev === 'desc' ? 'asc' : '')}
@@ -1879,6 +1868,132 @@ const updateApplicantStatus = (internshipId, studentEmail, status) => {
                 </button>
               )}
             </div>
+          </div>
+        )}
+
+        {/* INTERNSHIP FILTER — fixed, escapes stacking context */}
+        {showInternshipFilter && (
+          <div
+            style={{ position: 'fixed', top: internshipFilterPos.top, left: internshipFilterPos.left, zIndex: 9999, width: '16rem' }}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            onMouseEnter={() => clearTimeout(internshipFilterTimeout.current)}
+            onMouseLeave={() => { internshipFilterTimeout.current = setTimeout(() => setShowInternshipFilter(false), 150); }}
+          >
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Company</p>
+            <input
+              type="text"
+              value={internshipCompanyFilter}
+              onChange={(e) => setInternshipCompanyFilter(e.target.value)}
+              placeholder="e.g. Google"
+              className="mb-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400/30"
+            />
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Duration</p>
+            <div className="flex flex-col gap-1">
+              {['', '2 Months', '3 Months', '4 Months', '5 Months', '6 Months'].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setInternshipDurationFilter(d)}
+                  className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm transition hover:bg-slate-50 ${internshipDurationFilter === d ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
+                >
+                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${internshipDurationFilter === d ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+                  {d || 'All Durations'}
+                </button>
+              ))}
+            </div>
+            {(internshipCompanyFilter || internshipDurationFilter) && (
+              <button
+                onClick={() => { setInternshipCompanyFilter(''); setInternshipDurationFilter(''); }}
+                className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* INTERNSHIP SORT — fixed */}
+        {showInternshipSort && (
+          <div
+            style={{ position: 'fixed', top: internshipSortPos.top, left: internshipSortPos.left, zIndex: 9999, width: '12rem' }}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            onMouseEnter={() => clearTimeout(internshipSortTimeout.current)}
+            onMouseLeave={() => { internshipSortTimeout.current = setTimeout(() => setShowInternshipSort(false), 150); }}
+          >
+            {[
+              { value: 'newest', label: 'Newest First' },
+              { value: 'oldest', label: 'Oldest First' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => { setInternshipSort(opt.value); setShowInternshipSort(false); }}
+                className={`flex w-full items-center gap-2 px-4 py-3 text-sm transition hover:bg-slate-50 ${internshipSort === opt.value ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${internshipSort === opt.value ? 'bg-emerald-500' : 'bg-transparent'}`} />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* PROJECT SORT — fixed */}
+        {showProjectSort && (
+          <div
+            style={{ position: 'fixed', top: projectSortPos.top, left: projectSortPos.left, zIndex: 9999, width: '12rem' }}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
+            onMouseEnter={() => clearTimeout(projectSortTimeout.current)}
+            onMouseLeave={() => { projectSortTimeout.current = setTimeout(() => setShowProjectSort(false), 150); }}
+          >
+            {[
+              { value: '', label: 'Default' },
+              { value: 'date_desc', label: 'Newest First' },
+              { value: 'date_asc', label: 'Oldest First' },
+              { value: 'rating_desc', label: 'Highest Rated' },
+              { value: 'rating_asc', label: 'Lowest Rated' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => { setProjectSortBy(opt.value); setShowProjectSort(false); }}
+                className={`flex w-full items-center gap-2 px-4 py-3 text-xs transition hover:bg-slate-50 ${projectSortBy === opt.value ? 'font-semibold text-emerald-600' : 'text-slate-600'}`}
+              >
+                <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${projectSortBy === opt.value ? 'bg-emerald-500' : 'bg-transparent'}`} />
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* STUDENT FILTER — fixed */}
+        {showStudentFilter && (
+          <div
+            style={{ position: 'fixed', top: studentFilterPos.top, left: studentFilterPos.left, zIndex: 9999, width: '16rem' }}
+            className="overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-xl"
+            onMouseEnter={() => clearTimeout(studentFilterTimeout.current)}
+            onMouseLeave={() => { studentFilterTimeout.current = setTimeout(() => setShowStudentFilter(false), 150); }}
+          >
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Major</p>
+            <input
+              type="text"
+              value={studentMajorFilter}
+              onChange={(e) => setStudentMajorFilter(e.target.value)}
+              placeholder="e.g. Computer Science"
+              className="mb-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none"
+            />
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400">Skill</p>
+            <input
+              type="text"
+              value={studentSkillsFilter}
+              onChange={(e) => setStudentSkillsFilter(e.target.value)}
+              placeholder="e.g. React"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-emerald-300 focus:outline-none"
+            />
+            {(studentMajorFilter || studentSkillsFilter) && (
+              <button
+                onClick={() => { setStudentMajorFilter(''); setStudentSkillsFilter(''); }}
+                className="mt-3 w-full rounded-xl border border-red-100 bg-red-50 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-100"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         )}
 
