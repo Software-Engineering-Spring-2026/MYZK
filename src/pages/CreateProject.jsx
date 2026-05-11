@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 
 const COURSES = [
   "Bachelor Project",
@@ -111,13 +112,7 @@ function CreateProject() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-2xl px-4 py-12 sm:px-6">
-        {/* Back */}
-        <Link to="/home" className="mb-8 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Back to home
-        </Link>
+        <PageHeader showBack={true} />
 
         <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-xl backdrop-blur">
           {/* Header */}

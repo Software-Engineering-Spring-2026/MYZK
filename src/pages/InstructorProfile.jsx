@@ -1,4 +1,5 @@
 import { Link, useParams } from 'react-router-dom';
+import PageHeader from '../components/PageHeader';
 
 const MOCK_INSTRUCTORS = [
   { userId: 'u4', email: 'dr.ali@guc.com',    firstName: 'Ali',    lastName: 'Mahmoud', subject: 'Data Structures',      status: 'accepted' },
@@ -74,17 +75,7 @@ function InstructorProfile() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6">
-
-        {/* BACK */}
-        <Link
-          to="/home"
-          className="mb-8 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Back to Home
-        </Link>
+        <PageHeader showBack={true} />
 
         {/* PROFILE CARD */}
         <div className="mb-8 rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">

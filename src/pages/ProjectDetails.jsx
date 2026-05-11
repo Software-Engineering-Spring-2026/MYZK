@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
 
 const MOCK_USERS = [
   { id: "u2", email: "sara@guc.com", firstName: "Sara", lastName: "Ahmed", role: "student" },
@@ -86,6 +87,7 @@ const [draftFile, setDraftFile] = useState(null);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [showFlagModal, setShowFlagModal] = useState(false);
   const [flagReason, setFlagReason] = useState("");
+  const [flagError, setFlagError] = useState(false);
   const [showAppealModal, setShowAppealModal] = useState(false);
   const [appealText, setAppealText] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
@@ -118,10 +120,11 @@ const [draftFile, setDraftFile] = useState(null);
   };
 
   const addNotification = (userId, message) => {
+    const stored = JSON.parse(localStorage.getItem("notifications") || "[]");
     const notif = { id: Date.now().toString(), userId, message, read: false, createdAt: new Date().toISOString() };
-    const updated = [...notifications, notif];
-    setNotifications(updated);
-    localStorage.setItem("notifications", JSON.stringify(updated));
+    stored.push(notif);
+    localStorage.setItem("notifications", JSON.stringify(stored));
+    setNotifications(stored);
   };
 
   const toggleVisibility = () => saveProject({ ...project, isPublic: !project.isPublic });
@@ -210,31 +213,36 @@ const [draftFile, setDraftFile] = useState(null);
     };
     localStorage.setItem(invKey, JSON.stringify([...existing, inv]));
 
-    addNotification(invUser.id, `You have been invited to join the project "${project.title}"`);
+    const roleLabel = invUser.role === "instructor" ? "course instructor" : "collaborator";
+    addNotification(invUser.email, `You have been invited to join "${project.title}" as a ${roleLabel}`);
+    addNotification("admin@guc.edu.eg", `${currentUser.firstName} ${currentUser.lastName} invited ${invUser.firstName} ${invUser.lastName} (${roleLabel}) to project "${project.title}"`);
     setSearchResults(prev => prev.filter(r => r.id !== invUser.id));
   };
 
   const cancelInvitation = (userId, type) => {
+    const person = type === "instructor"
+      ? project.instructors.find(i => i.userId === userId)
+      : project.collaborators.find(c => c.userId === userId);
     const updated = type === "instructor"
       ? { ...project, instructors: project.instructors.filter(i => i.userId !== userId) }
       : { ...project, collaborators: project.collaborators.filter(c => c.userId !== userId) };
     saveProject(updated);
+    if (person) {
+      addNotification("admin@guc.edu.eg", `${currentUser.firstName} ${currentUser.lastName} cancelled the invitation for ${person.firstName} ${person.lastName} on project "${project.title}"`);
+    }
   };
 
 const removeCollaborator = (userId) => {
+  const collab = project.collaborators.find(c => c.userId === userId);
   const updatedProject = {
     ...project,
-    collaborators: project.collaborators.filter(
-      (c) => c.userId !== userId
-    ),
+    collaborators: project.collaborators.filter(c => c.userId !== userId),
   };
-
   saveProject(updatedProject);
-
-  addNotification(
-    userId,
-    `You were removed from the project "${project.title}"`
-  );
+  if (collab) {
+    addNotification(collab.email, `You were removed from the project "${project.title}"`);
+    addNotification("admin@guc.edu.eg", `${currentUser.firstName} ${currentUser.lastName} removed ${collab.firstName} ${collab.lastName} from project "${project.title}"`);
+  }
 };
 
  const uploadDraft = () => {
@@ -260,10 +268,11 @@ const removeCollaborator = (userId) => {
 };
 
   const selectFinalDraft = (draftId) => {
+    const isAlreadyFinal = project.thesisDrafts.find(d => d.id === draftId)?.isFinal;
     const updatedDrafts = project.thesisDrafts.map(d => ({
       ...d,
-      isFinal: d.id === draftId,
-      isPrivate: d.id !== draftId,
+      isFinal: isAlreadyFinal ? false : d.id === draftId,
+      isPrivate: isAlreadyFinal ? false : d.id !== draftId,
     }));
     saveProject({ ...project, thesisDrafts: updatedDrafts });
   };
@@ -298,11 +307,12 @@ const removeCollaborator = (userId) => {
   };
 
   const submitFlag = () => {
-    if (!flagReason.trim()) return;
+    if (!flagReason.trim()) { setFlagError(true); return; }
     saveProject({ ...project, flagged: true, flagReason, appeal: "" });
     addNotification(project.creatorId, `Your project "${project.title}" has been flagged. Reason: ${flagReason}`);
     setShowFlagModal(false);
     setFlagReason("");
+    setFlagError(false);
   };
 
   const submitAppeal = () => {
@@ -398,7 +408,6 @@ const removeCollaborator = (userId) => {
     { id: "collaborators", label: "Collaborators" },
     ...(isBachelorProject ? [{ id: "thesis", label: "Thesis Drafts" }] : []),
     ...(isStudent || isInstructor ? [{ id: "invitations", label: "Invitations" }] : []),
-    ...(isStudent || isInstructor ? [{ id: "notifications", label: unreadCount > 0 ? `Notifications (${unreadCount})` : "Notifications" }] : []),
   ];
 
   return (
@@ -410,12 +419,7 @@ const removeCollaborator = (userId) => {
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl px-4 py-8 sm:px-6">
-        <Link to="/home" className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
-            <path d="M19 12H5M12 5l-7 7 7 7" />
-          </svg>
-          Back to projects
-        </Link>
+        <PageHeader showBack={true} />
 
         {/* ── HEADER CARD ── */}
         <div className="mb-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-lg backdrop-blur">
@@ -854,7 +858,7 @@ const removeCollaborator = (userId) => {
               <div className="rounded-3xl border border-dashed border-slate-300 bg-white/60 p-12 text-center">
                 <p className="text-slate-400">No thesis drafts uploaded yet.</p>
               </div>
-            ) : project.thesisDrafts.filter(d => !d.isPrivate || isCreator || isProjectInstructor || isInstructor).map(draft => (
+            ) : project.thesisDrafts.filter(d => !d.isPrivate || isCreator || role === 'admin').map(draft => (
               <div key={draft.id} className={`rounded-2xl border p-5 backdrop-blur transition hover:shadow-md ${draft.isFinal ? "border-emerald-300 bg-emerald-50/80" : "border-slate-200 bg-white/80"}`}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex-1">
@@ -879,9 +883,9 @@ const removeCollaborator = (userId) => {
                     )}
                   </div>
                   <div className="flex shrink-0 flex-wrap gap-2">
-                    {isCreator && !draft.isFinal && (
-                      <button onClick={() => selectFinalDraft(draft.id)} className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100">
-                        Set as Final
+                    {isCreator && (
+                      <button onClick={() => selectFinalDraft(draft.id)} className={`rounded-full px-3 py-1 text-xs font-semibold transition ${draft.isFinal ? 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
+                        {draft.isFinal ? 'Unset Final' : 'Set as Final'}
                       </button>
                     )}
                     {isProjectInstructor && (
@@ -937,25 +941,6 @@ const removeCollaborator = (userId) => {
           </div>
         )}
 
-        {/* ══ NOTIFICATIONS ══ */}
-        {activeTab === "notifications" && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-slate-900">Notifications</h2>
-            {myNotifications.length === 0 ? (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-white/60 p-12 text-center">
-                <p className="text-slate-400">No notifications yet.</p>
-              </div>
-            ) : myNotifications.map(n => (
-              <div key={n.id} className={`rounded-2xl border p-4 ${n.read ? "border-slate-100 bg-white/60" : "border-emerald-200 bg-emerald-50/80"}`}>
-                <div className="flex items-start justify-between gap-3">
-                  <p className="text-sm text-slate-700">{n.message}</p>
-                  {!n.read && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500" />}
-                </div>
-                <p className="mt-2 text-xs text-slate-400">{new Date(n.createdAt).toLocaleString()}</p>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* ══════ MODALS ══════ */}
@@ -1086,13 +1071,16 @@ const removeCollaborator = (userId) => {
             <p className="mb-4 text-sm text-slate-500">The project will be deactivated. The student will be notified and may submit an appeal.</p>
             <textarea
               value={flagReason}
-              onChange={e => setFlagReason(e.target.value)}
+              onChange={e => { setFlagReason(e.target.value); setFlagError(false); }}
               placeholder="Reason for flagging (e.g. plagiarism, policy violation)..."
               rows={3}
-              className="w-full resize-none rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/30"
+              className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 ${flagError ? 'border-red-400 focus:border-red-400 focus:ring-red-400/30' : 'border-slate-200 focus:border-red-300 focus:ring-red-400/30'}`}
             />
+            {flagError && (
+              <p className="mt-2 text-xs font-semibold text-red-500">A reason is required before flagging this project.</p>
+            )}
             <div className="mt-4 flex justify-end gap-3">
-              <button onClick={() => setShowFlagModal(false)} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
+              <button onClick={() => { setShowFlagModal(false); setFlagError(false); setFlagReason(''); }} className="rounded-full px-4 py-2 text-sm text-slate-500 transition hover:bg-slate-100">Cancel</button>
               <button onClick={submitFlag} className="rounded-full bg-red-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-600">Flag Project</button>
             </div>
           </div>

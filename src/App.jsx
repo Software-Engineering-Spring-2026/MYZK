@@ -11,6 +11,7 @@ import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/AdminDashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import InstructorProfile from "./pages/InstructorProfile";
+import Messages from "./pages/Messages";
 
 function App() {
   useEffect(() => {
@@ -49,6 +50,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/instructor/:email" element={<InstructorProfile />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </BrowserRouter>
   );
