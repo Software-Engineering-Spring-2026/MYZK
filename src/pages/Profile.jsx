@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const COURSES = [
   'Bachelor Project','Software Engineering','Operating Systems','Machine Learning',
@@ -9,11 +9,89 @@ const COURSES = [
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ---------------- AUTH ----------------
   const user = JSON.parse(localStorage.getItem('user'));
+  const viewEmail = new URLSearchParams(location.search).get('email');
   useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
   if (!user) return null;
+
+  // ---------------- VIEW ANOTHER STUDENT ----------------
+  if (viewEmail && viewEmail !== user.email) {
+    const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
+    const viewed = storedUsers.find(u => u.email === viewEmail);
+    const viewedProjects = (JSON.parse(localStorage.getItem('projects')) || [])
+      .filter(p => p.creatorId === viewEmail && p.isPublic !== false);
+    const viewedSkills = JSON.parse(localStorage.getItem(`skills_${viewEmail}`)) || viewed?.skills || [];
+    const viewedMajor = localStorage.getItem(`major_${viewEmail}`) || viewed?.major || '';
+    const viewedLinkedIn = localStorage.getItem(`linkedin_${viewEmail}`) || '';
+    const viewedBio = localStorage.getItem(`bio_${viewEmail}`) || '';
+    const displayName = viewed ? `${viewed.firstName} ${viewed.lastName}` : viewEmail;
+    return (
+      <div className="min-h-screen bg-[#f7f4ee] text-slate-900 antialiased">
+        <div className="pointer-events-none fixed inset-0 z-0">
+          <div className="absolute -top-32 left-1/2 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-amber-200/70 blur-3xl" />
+          <div className="absolute right-[-6%] top-20 h-[360px] w-[360px] rounded-full bg-emerald-200/60 blur-3xl" />
+        </div>
+        <div className="relative z-10 mx-auto max-w-4xl px-4 py-10 sm:px-6">
+          <button onClick={() => navigate(-1)} className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition hover:text-slate-900">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4"><path d="M19 12H5M12 5l-7 7 7 7" /></svg>
+            Back
+          </button>
+          <div className="rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-lg backdrop-blur">
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-3xl font-bold text-emerald-700">
+                {displayName.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              </div>
+              <div className="flex-1">
+                <h1 className="text-3xl font-semibold text-slate-900">{displayName}</h1>
+                <p className="mt-1 text-sm text-slate-500">{viewEmail}</p>
+                {viewedMajor && <p className="mt-1 text-sm font-medium text-emerald-600">{viewedMajor}</p>}
+                {viewedBio && <p className="mt-3 leading-relaxed text-slate-600">{viewedBio}</p>}
+                {viewedLinkedIn && (
+                  <a href={viewedLinkedIn} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:underline">
+                    LinkedIn Profile →
+                  </a>
+                )}
+              </div>
+            </div>
+            {viewedSkills.length > 0 && (
+              <div className="mt-6">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-400">Skills</p>
+                <div className="flex flex-wrap gap-2">
+                  {viewedSkills.map((s, i) => (
+                    <span key={i} className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">{s}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="mt-6 rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm backdrop-blur">
+            <h2 className="mb-4 text-lg font-semibold text-slate-900">Projects ({viewedProjects.length})</h2>
+            {viewedProjects.length === 0 ? (
+              <p className="text-sm italic text-slate-400">No public projects.</p>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {viewedProjects.map(p => (
+                  <div key={p.id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-slate-900">{p.title}</p>
+                      <span className="mt-0.5 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{p.course}</span>
+                      {p.rating > 0 && <p className="mt-0.5 text-xs text-amber-500">{'★'.repeat(p.rating)}{'☆'.repeat(5 - p.rating)}</p>}
+                    </div>
+                    <button onClick={() => navigate(`/project/${p.id}`)} className="ml-3 shrink-0 rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-500">
+                      View
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ---------------- SHARED ----------------
   const [isEditing, setIsEditing] = useState(false);
