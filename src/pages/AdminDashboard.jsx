@@ -219,6 +219,7 @@ const TABS = [
   "moderation",
   "projects",
   "portfolios",
+  "documents",
   "notifications",
 ];
 
@@ -266,8 +267,18 @@ const getUserStatus = (user) => {
   return user.status ?? "pending";
 };
 const isActive = (item) => item?.active ?? true;
-const getRating = (project) => project?.rating ?? 0;
+const getRating = (project) => {
+  const value = Number(project?.rating);
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(5, value));
+};
 const getCreatedAt = (project) => project?.createdAt ?? "Not recorded";
+const getCreatedAtValue = (project) => {
+  const raw = project?.createdAt;
+  if (!raw) return 0;
+  const time = new Date(raw).getTime();
+  return Number.isNaN(time) ? 0 : time;
+};
 
 const getAdminReadState = (notifications) =>
   notifications.reduce((state, notification) => {
@@ -384,6 +395,8 @@ function AdminDashboard() {
   const [projectInstructorFilter, setProjectInstructorFilter] = useState("all");
   const [projectDateFilter, setProjectDateFilter] = useState("");
   const [projectStateFilter, setProjectStateFilter] = useState("all");
+  const [projectRatingFilter, setProjectRatingFilter] = useState(0);
+  const [hoveredProjectRating, setHoveredProjectRating] = useState(0);
   const [projectSort, setProjectSort] = useState("newest");
   const [portfolioSearch, setPortfolioSearch] = useState("");
   const [portfolioSkillFilter, setPortfolioSkillFilter] = useState("");
@@ -400,6 +413,8 @@ function AdminDashboard() {
   });
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [modal, setModal] = useState(null);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagError, setFlagError] = useState("");
 
   useEffect(() => {
     if (!currentAdmin || currentAdmin.role !== "admin") {
@@ -633,24 +648,33 @@ function AdminDashboard() {
           project.courseInstructor === projectInstructorFilter;
         const matchesDate =
           !projectDateFilter || getCreatedAt(project).includes(projectDateFilter);
+        const matchesRating =
+          projectRatingFilter === 0 || getRating(project) >= projectRatingFilter;
         const matchesState =
           projectStateFilter === "all" ||
           (projectStateFilter === "flagged" && project.flagged) ||
           (projectStateFilter === "active" && isActive(project)) ||
           (projectStateFilter === "inactive" && !isActive(project));
-        return matchesSearch && matchesCourse && matchesInstructor && matchesDate && matchesState;
+        return (
+          matchesSearch &&
+          matchesCourse &&
+          matchesInstructor &&
+          matchesDate &&
+          matchesRating &&
+          matchesState
+        );
       })
       .sort((a, b) => {
-        if (projectSort === "rating") return getRating(b) - getRating(a);
         if (projectSort === "oldest") {
-          return new Date(getCreatedAt(a)) - new Date(getCreatedAt(b));
+          return getCreatedAtValue(a) - getCreatedAtValue(b);
         }
-        return new Date(getCreatedAt(b)) - new Date(getCreatedAt(a));
+        return getCreatedAtValue(b) - getCreatedAtValue(a);
       });
   }, [
     projectCourseFilter,
     projectDateFilter,
     projectInstructorFilter,
+    projectRatingFilter,
     projectSearch,
     projectSort,
     projectStateFilter,
@@ -705,6 +729,29 @@ function AdminDashboard() {
           : b.projects.length - a.projects.length
       );
   }, [portfolioSearch, portfolioSkillFilter, portfolioSort, portfolios]);
+
+  const openFlagModal = (project) => {
+    setFlagReason("");
+    setModal({ type: "flag", data: project });
+  };
+
+  const submitFlag = (event) => {
+    event.preventDefault();
+    if (!flagReason.trim() || !modal?.data) {
+      setFlagError("Please fill this field.");
+      return;
+    }
+
+    updateProject(modal.data, {
+      flagged: true,
+      flagReason: flagReason.trim(),
+      appeal: "",
+      active: false,
+    });
+    setModal(null);
+    setFlagReason("");
+    setFlagError("");
+  };
 
   const openCourseModal = (course = null) => {
     setEditingCourseId(course ? courseKey(course) : null);
@@ -1253,7 +1300,7 @@ function AdminDashboard() {
   const renderProjects = () => (
     <div className="space-y-5">
       <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-lg backdrop-blur">
-        <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-3 lg:grid-cols-3 xl:grid-cols-7">
           <input
             value={projectSearch}
             onChange={(event) => setProjectSearch(event.target.value)}
@@ -1290,6 +1337,38 @@ function AdminDashboard() {
             onChange={(event) => setProjectDateFilter(event.target.value)}
             className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm text-slate-500 outline-none transition focus:border-emerald-300 focus:ring-2 focus:ring-emerald-400/30"
           />
+          <div className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3">
+            <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+              Min rating
+            </label>
+            <div className="flex items-center gap-0.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onMouseEnter={() => setHoveredProjectRating(star)}
+                  onMouseLeave={() => setHoveredProjectRating(0)}
+                  onClick={() =>
+                    setProjectRatingFilter(
+                      projectRatingFilter === star ? 0 : star
+                    )
+                  }
+                  className="transition hover:scale-110"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`h-5 w-5 transition ${
+                      star <= (hoveredProjectRating || projectRatingFilter)
+                        ? "fill-amber-400 text-amber-400"
+                        : "fill-slate-200 text-slate-300"
+                    }`}
+                  >
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </div>
           <select
             value={projectStateFilter}
             onChange={(event) => setProjectStateFilter(event.target.value)}
@@ -1307,7 +1386,6 @@ function AdminDashboard() {
           >
             <option value="newest">Newest first</option>
             <option value="oldest">Oldest first</option>
-            <option value="rating">Rating</option>
           </select>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
@@ -1338,9 +1416,24 @@ function AdminDashboard() {
                     {isActive(project) ? "active" : "inactive"}
                   </Pill>
                   {project.flagged && <Pill className={statusClass("rejected")}>flagged</Pill>}
-                  <Pill className="border-sky-200 bg-sky-100 text-sky-700">
-                    {getRating(project)}/5
-                  </Pill>
+                  <div className="inline-flex items-center gap-1 rounded-full border border-sky-200 bg-sky-100 px-2.5 py-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        viewBox="0 0 24 24"
+                        className={`h-3 w-3 ${
+                          star <= getRating(project)
+                            ? "fill-amber-400 text-amber-400"
+                            : "fill-slate-200 text-slate-200"
+                        }`}
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                      </svg>
+                    ))}
+                    <span className="text-xs font-semibold text-sky-700">
+                      {getRating(project)}/5
+                    </span>
+                  </div>
                 </div>
                 <h2 className="text-xl font-semibold text-slate-900">
                   {project.title || "Untitled project"}
@@ -1367,16 +1460,14 @@ function AdminDashboard() {
                 <ActionButton
                   variant={project.flagged ? "secondary" : "danger"}
                   onClick={() =>
-                    updateProject(
-                      project,
-                      project.flagged
-                        ? { flagged: false, flagReason: "", appeal: "", active: true }
-                        : {
-                            flagged: true,
-                            flagReason: "Flagged by administrator",
-                            active: false,
-                          }
-                    )
+                    project.flagged
+                      ? updateProject(project, {
+                          flagged: false,
+                          flagReason: "",
+                          appeal: "",
+                          active: true,
+                        })
+                      : openFlagModal(project)
                   }
                 >
                   {project.flagged ? "Unflag" : "Flag"}
@@ -1639,6 +1730,98 @@ function AdminDashboard() {
     </div>
   );
 
+  const renderDocuments = () => {
+    const employersWithDocs = employers.filter((employer) => employer.taxDocument);
+    const students = users.filter((user) => user.role === "student");
+
+    return (
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-lg backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                Uploaded documents
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900">
+                Employer tax documents
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Review verification files submitted by employers.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {employersWithDocs.map((employer) => (
+              <div
+                key={`doc-${userKey(employer)}`}
+                className="flex flex-col gap-3 rounded-2xl border border-slate-100 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">
+                    {employer.companyName || getUserName(employer)}
+                  </p>
+                  <p className="text-sm text-slate-500">{employer.taxDocument}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <ActionButton
+                    variant="secondary"
+                    onClick={() => setModal({ type: "document", data: employer })}
+                  >
+                    View Document
+                  </ActionButton>
+                  <ActionButton
+                    variant="secondary"
+                    onClick={() => downloadDocumentPlaceholder(employer)}
+                  >
+                    Download
+                  </ActionButton>
+                </div>
+              </div>
+            ))}
+            {employersWithDocs.length === 0 && (
+              <EmptyState>No employer documents uploaded yet.</EmptyState>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-lg backdrop-blur">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-600">
+                Uploaded documents
+              </p>
+              <h2 className="mt-2 text-xl font-semibold text-slate-900">
+                Student theses
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Thesis files will appear here once uploaded by students.
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-3">
+            {students.map((student) => (
+              <div
+                key={`thesis-${userKey(student)}`}
+                className="flex flex-col gap-2 rounded-2xl border border-slate-100 bg-white/80 p-4 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-slate-900">{getUserName(student)}</p>
+                  <p className="text-sm text-slate-500">{student.email || "No email"}</p>
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                  No thesis uploaded
+                </span>
+              </div>
+            ))}
+            {students.length === 0 && (
+              <EmptyState>No student theses to review yet.</EmptyState>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderActiveTab = () => {
     if (activeTab === "overview") return renderOverview();
     if (activeTab === "employers") return renderEmployers();
@@ -1647,6 +1830,7 @@ function AdminDashboard() {
     if (activeTab === "moderation") return renderModeration();
     if (activeTab === "projects") return renderProjects();
     if (activeTab === "portfolios") return renderPortfolios();
+    if (activeTab === "documents") return renderDocuments();
     return renderNotifications();
   };
 
@@ -1737,6 +1921,48 @@ function AdminDashboard() {
                   Cancel
                 </ActionButton>
                 <ActionButton type="submit">Save</ActionButton>
+              </div>
+            </form>
+          )}
+
+          {modal.type === "flag" && (
+            <form onSubmit={submitFlag} className="space-y-4">
+              <h2 className="text-xl font-semibold text-slate-900">Flag Project</h2>
+              <p className="text-sm text-slate-500">
+                The project will be deactivated. The student will be notified and may submit an appeal.
+              </p>
+              <textarea
+                value={flagReason}
+                onChange={(event) => {
+                  setFlagReason(event.target.value);
+                  if (flagError) setFlagError("");
+                }}
+                placeholder="Reason for flagging (e.g. plagiarism, policy violation)..."
+                rows={3}
+                required
+                aria-invalid={flagError ? "true" : "false"}
+                className={`w-full resize-none rounded-2xl border px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-red-400/30 ${
+                  flagError ? "border-red-300 focus:border-red-300" : "border-slate-200 focus:border-red-300"
+                }`}
+              />
+              {flagError && (
+                <p className="text-xs font-semibold text-red-500">{flagError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <ActionButton
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setModal(null);
+                    setFlagReason("");
+                    setFlagError("");
+                  }}
+                >
+                  Cancel
+                </ActionButton>
+                <ActionButton type="submit" variant="danger">
+                  Flag Project
+                </ActionButton>
               </div>
             </form>
           )}
@@ -1853,7 +2079,7 @@ function AdminDashboard() {
             </>
           )}
 
-          {modal.type !== "admin" && modal.type !== "course" && (
+          {modal.type !== "admin" && modal.type !== "course" && modal.type !== "flag" && (
             <div className="mt-6 flex justify-end">
               <ActionButton variant="secondary" onClick={() => setModal(null)}>
                 Close
